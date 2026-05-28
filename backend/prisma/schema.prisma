@@ -1,0 +1,130 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           String        @id @default(uuid())
+  email        String        @unique
+  passwordHash String
+  name         String
+  createdAt    DateTime      @default(now())
+  profile      Profile?
+  resumes      Resume[]
+  interviews   Interview[]
+  logs         ActivityLog[]
+  subscription Subscription?
+}
+
+model Profile {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  college         String?
+  graduationYear  Int?
+  branch          String?
+  experienceLevel String   // Student, Professional
+  preferredRoles  String[]
+}
+
+model Resume {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fileName    String
+  filePath    String
+  parsedText  String
+  atsScore    Int?
+  uploadedAt  DateTime @default(now())
+  projects    Project[]
+  skills      Skill[]
+}
+
+model Project {
+  id          String @id @default(uuid())
+  resumeId    String
+  resume      Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+  title       String
+  description String
+}
+
+model Skill {
+  id       String @id @default(uuid())
+  resumeId String
+  resume   Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+  name     String
+}
+
+model Interview {
+  id             String          @id @default(uuid())
+  userId         String
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role           String
+  difficulty     String
+  companyStyle   String
+  createdAt      DateTime        @default(now())
+  questions      Question[]
+  feedbackReport FeedbackReport?
+}
+
+model Question {
+  id          String   @id @default(uuid())
+  interviewId String
+  interview   Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  content     String
+  category    String   // DSA, OOP, System Design, Behavioral, Scenario
+  answer      Answer?
+}
+
+model Answer {
+  id           String   @id @default(uuid())
+  questionId   String   @unique
+  question     Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  responseText String
+  feedback     String?
+  score        Score?
+}
+
+model Score {
+  id                String @id @default(uuid())
+  answerId          String @unique
+  answer            Answer @relation(fields: [answerId], references: [id], onDelete: Cascade)
+  technicalDepth    Int
+  communication     Int
+  problemSolving    Int
+  confidence        Int
+  behavioral        Int
+  overall           Int
+}
+
+model FeedbackReport {
+  id             String    @id @default(uuid())
+  interviewId    String    @unique
+  interview      Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  strengths      String[]
+  weaknesses     String[]
+  roadmapSteps   String[]
+  overallScore   Int
+}
+
+model ActivityLog {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action    String
+  ipAddress String?
+  createdAt DateTime @default(now())
+}
+
+model Subscription {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan      String   // Free, Pro, Premium
+  isActive  Boolean  @default(true)
+  expiresAt DateTime
+}
