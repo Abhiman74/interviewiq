@@ -11,3 +11,7 @@ An AI-powered mock interview platform that conducts realistic interview simulati
 ## Stack
 - **Frontend**: React, TypeScript, TailwindCSS, Zustand, React Query, Framer Motion
 - **Backend**: Node.js, Express, PostgreSQL, Prisma ORM, Redis, Pinecone
+
+### Authentication Routes
+- `POST /api/auth/register`
+- `POST /api/auth/login`
