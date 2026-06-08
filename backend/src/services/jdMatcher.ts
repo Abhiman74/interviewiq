@@ -1,0 +1,1 @@
+export const matchResumeToJD = async (resumeId: string, jd: string) => { return { matchScore: 85, missingKeywords: [] }; };
