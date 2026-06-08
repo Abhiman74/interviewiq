@@ -1,0 +1,1 @@
+export default function JobMatchDashboard() { return <div>JD Match</div>; }
