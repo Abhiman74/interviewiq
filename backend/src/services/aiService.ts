@@ -1,0 +1,1 @@
+export const generateQuestion = async (context: string) => { return 'Mock question'; };
