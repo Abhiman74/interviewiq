@@ -1,0 +1,1 @@
+export const generateEmbedding = async (text: string) => { return [0.1, 0.2]; };
