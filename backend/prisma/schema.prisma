@@ -128,3 +128,4 @@ model Subscription {
   isActive  Boolean  @default(true)
   expiresAt DateTime
 }
+// Modified Interview schema with category support
