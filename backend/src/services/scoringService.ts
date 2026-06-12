@@ -1,0 +1,1 @@
+export const calculateScore = async (answer: string) => { return { overall: 80 }; };
