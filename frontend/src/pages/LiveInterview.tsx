@@ -1,0 +1,1 @@
+export default function LiveInterview() { return <div>Live Interview Room</div>; }
