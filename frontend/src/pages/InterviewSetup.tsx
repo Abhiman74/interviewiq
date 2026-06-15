@@ -21,10 +21,19 @@ export default function InterviewSetup({ onBack, onStart }: SetupProps) {
   const difficulties = ['Beginner', 'Intermediate', 'Advanced'];
   const styles = [
     { id: 'Google-style', name: 'Google Style', desc: 'Focuses heavily on algorithm complexity, system scalability, and core computing concepts.' },
+    { id: 'DSA-style', name: 'DSA Coding Round', desc: 'Coding-focused round testing optimal algorithms, complexity analysis (Big-O), and brute-force optimizations.' },
     { id: 'Amazon-style', name: 'Amazon Style', desc: 'Evaluates behavioral responses strictly against the 16 Leadership Principles.' },
     { id: 'Microsoft-style', name: 'Microsoft Style', desc: 'Emphasizes direct problem-solving, structural OOP coding, and API design.' },
     { id: 'Startup-style', name: 'Startup Style', desc: 'Fast-paced, broad full-stack scenarios, rapid development tradeoffs, and deployment debugging.' }
   ];
+
+  const companyPresets: Record<string, string> = {
+    Google: "Focus heavily on time and space complexity. Ask classic algorithmic or graph traversal questions. Expect O(N log N) or optimal O(N) solutions.",
+    Meta: "Speed and correctness are key. Focus on standard array, string, and sliding window problems. Candidates should optimize for space and time.",
+    Amazon: "Focus heavily on customer obsession and ownership principles during the initial discussion, followed by an array/heap data structure problem.",
+    Stripe: "Focus on clean coding, readability, API design, and robustness. Candidates must write functional code that handles edge cases cleanly.",
+    Netflix: "Expect highly optimized microservice or system-oriented design, or advanced algorithmic concurrency issues."
+  };
 
   return (
     <div className="flex-1 max-w-4xl mx-auto px-6 py-12 w-full flex flex-col gap-8">
@@ -101,9 +110,23 @@ export default function InterviewSetup({ onBack, onStart }: SetupProps) {
 
             {/* Custom Context */}
             <div className="flex flex-col gap-2 mt-4 text-left">
-              <label className="text-sm font-semibold text-slate-350 flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-pink-400" /> Target Company Context (Optional)
+              <label className="text-sm font-semibold text-slate-305 flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-pink-400" /> Target Company Context & Presets (Optional)
               </label>
+
+              <div className="flex flex-wrap gap-2 mb-1">
+                {Object.keys(companyPresets).map((comp) => (
+                  <button
+                    key={comp}
+                    type="button"
+                    onClick={() => setCustomContext(companyPresets[comp])}
+                    className="px-2.5 py-1 text-[10px] rounded-lg bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 hover:text-white transition"
+                  >
+                    {comp} Preset
+                  </button>
+                ))}
+              </div>
+
               <textarea
                 value={customContext}
                 onChange={(e) => setCustomContext(e.target.value)}

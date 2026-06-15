@@ -125,6 +125,49 @@ export default function InterviewResults({ interviewId, history, onBack }: Resul
         </p>
       </div>
 
+      {/* Code Complexity & Progression Analysis */}
+      {(activeInterview.complexity || activeInterview.progression) && (
+        <div className="p-6 rounded-2xl glass-panel flex flex-col gap-5">
+          <h3 className="font-extrabold text-slate-200 text-sm flex items-center gap-2 border-b border-slate-900 pb-3">
+            <CheckCircle2 className="w-4.5 h-4.5 text-indigo-400" /> Algorithmic Complexity & Progression
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {activeInterview.complexity && (
+              <div className="p-5 rounded-xl border border-slate-900 bg-slate-950/20 flex flex-col gap-2 text-left">
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Complexity Analysis</span>
+                <div className="flex items-center gap-6 mt-1">
+                  <div>
+                    <span className="text-[10px] text-slate-400 uppercase">Time Complexity</span>
+                    <p className="font-mono text-sm font-black text-emerald-450 mt-0.5">{activeInterview.complexity.time || 'N/A'}</p>
+                  </div>
+                  <div className="border-l border-slate-800 pl-6">
+                    <span className="text-[10px] text-slate-400 uppercase font-semibold">Space Complexity</span>
+                    <p className="font-mono text-sm font-black text-cyan-455 mt-0.5">{activeInterview.complexity.space || 'N/A'}</p>
+                  </div>
+                </div>
+                <p className="text-xs text-slate-450 mt-2 leading-relaxed">{activeInterview.complexity.explanation}</p>
+              </div>
+            )}
+
+            {activeInterview.progression && (
+              <div className="p-5 rounded-xl border border-slate-900 bg-slate-950/20 flex flex-col gap-2 text-left">
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Brute Force to Optimal Progression</span>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider ${
+                    activeInterview.progression.detected 
+                      ? 'bg-emerald-600/10 text-emerald-400 border border-emerald-500/20' 
+                      : 'bg-amber-600/10 text-amber-400 border border-amber-500/20'
+                  }`}>
+                    {activeInterview.progression.detected ? 'Optimized Progression Cleared' : 'Standard Implementation'}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-450 mt-2 leading-relaxed">{activeInterview.progression.description}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Scores Breakdown Column */}
         <div className="p-6 rounded-2xl glass-panel flex flex-col gap-6">

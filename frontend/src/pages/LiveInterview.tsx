@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Mic, MicOff, Video, VideoOff, Timer, Volume2, ShieldAlert, CheckCircle, RefreshCw, BarChart2, ShieldCheck, ArrowRight, CornerDownLeft } from 'lucide-react';
+import { Mic, MicOff, Video, VideoOff, Timer, Volume2, VolumeX, ShieldAlert, CheckCircle, RefreshCw, BarChart2, ShieldCheck, ArrowRight, CornerDownLeft } from 'lucide-react';
 import { ActiveSession, ParsedResume } from '../App';
-import { submitInterviewAnswer } from '../services/api';
+import { submitInterviewAnswer, submitCodeForExecution, requestAIHint } from '../services/api';
 
 import CodeSandbox from '../components/CodeSandbox';
 
@@ -24,6 +24,7 @@ export default function LiveInterview({ session, parsedResume, onFinish, onCance
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [chatHistory, setChatHistory] = useState<any[]>([]);
   const [aiTyping, setAiTyping] = useState(false);
+  const [voiceMode, setVoiceMode] = useState(false);
   
   // Timer States
   const [totalSeconds, setTotalSeconds] = useState(0);
@@ -75,18 +76,58 @@ export default function LiveInterview({ session, parsedResume, onFinish, onCance
 
   // Text to Speech for questions
   const speakQuestion = (text: string) => {
+    if (!voiceMode) return;
+    
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
       
       const voices = window.speechSynthesis.getVoices();
-      const defaultVoice = voices.find(voice => voice.lang.startsWith('en') && voice.name.includes('Google'));
+      const defaultVoice = voices.find(voice => voice.lang.startsWith('en') && (voice.name.includes('Google') || voice.name.includes('Natural')));
       if (defaultVoice) utterance.voice = defaultVoice;
       
-      utterance.onstart = () => setIsSpeaking(true);
-      utterance.onend = () => setIsSpeaking(false);
+      utterance.onstart = () => {
+        setIsSpeaking(true);
+        if (isRecording && recognitionRef.current) {
+          recognitionRef.current.stop();
+        }
+      };
+      
+      utterance.onend = () => {
+        setIsSpeaking(false);
+        if (voiceMode && recognitionRef.current) {
+          try {
+            recognitionRef.current.start();
+            setIsRecording(true);
+          } catch (e) {
+            console.log('Voice mode start recognition bypassed:', e);
+          }
+        }
+      };
+      
       window.speechSynthesis.speak(utterance);
     }
+  };
+
+  useEffect(() => {
+    if (voiceMode && currentQuestion) {
+      speakQuestion(currentQuestion);
+    } else if (!voiceMode && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+  }, [voiceMode]);
+
+  const getBoilerplateCode = () => {
+    const isDSA = session.style === 'DSA-style';
+    if (!isDSA) return '';
+    const qText = currentQuestion.toLowerCase();
+    if (qText.includes('two sum') || qText.includes('target')) {
+      return `function twoSum(nums: number[], target: number): number[] {\n    // Write your optimal O(N) solution here using a Map\n    const map = new Map<number, number>();\n    for (let i = 0; i < nums.length; i++) {\n        const diff = target - nums[i];\n        if (map.has(diff)) {\n            return [map.get(diff)!, i];\n        }\n        map.set(nums[i], i);\n    }\n    return [];\n}\n`;
+    }
+    if (qText.includes('reverse') || qText.includes('string')) {
+      return `function reverseString(s: string[]): void {\n    // Write your optimal O(1) space solution here\n    let left = 0, right = s.length - 1;\n    while (left < right) {\n        [s[left], s[right]] = [s[right], s[left]];\n        left++;\n        right--;\n    }\n}\n`;
+    }
+    return `function solve(nums: number[]): number {\n    // Write your solution here\n    return 0;\n}\n`;
   };
 
   // Setup first question
@@ -239,7 +280,7 @@ export default function LiveInterview({ session, parsedResume, onFinish, onCance
   const currentCategory = currentIdx === 0 ? 'Introductory' : 'Adaptive Follow-up';
   const progressPct = Math.min(((currentIdx + 1) / 4) * 100, 100);
 
-  const isTechnicalRole = ['Software Engineer', 'Backend Engineer', 'Frontend Engineer', 'Full Stack Engineer', 'Machine Learning Engineer'].includes(session.role) || session.style.includes('Google') || session.style.includes('Microsoft') || session.style.includes('Startup');
+  const isTechnicalRole = ['Software Engineer', 'Backend Engineer', 'Frontend Engineer', 'Full Stack Engineer', 'Machine Learning Engineer'].includes(session.role) || session.style.includes('Google') || session.style.includes('Microsoft') || session.style.includes('Startup') || session.style.includes('DSA');
 
   const words = inputText.trim().split(/\s+/).filter(w => w.length > 0);
   const liveWpm = questionSeconds > 3 ? Math.round((words.length / questionSeconds) * 60) : 0;
@@ -346,7 +387,18 @@ export default function LiveInterview({ session, parsedResume, onFinish, onCance
         {/* Center Side: Code Editor Sandbox */}
         {isTechnicalRole && (
           <div className="w-full lg:w-[48%] border-r border-slate-900 bg-[#0B0F19]/10 p-6 flex flex-col overflow-hidden shrink-0">
-            <CodeSandbox onChange={setSandboxCode} />
+            <CodeSandbox 
+              initialCode={getBoilerplateCode()}
+              onChange={setSandboxCode}
+              onRunCode={async (code, lang) => {
+                const res = await submitCodeForExecution(code, lang);
+                return res;
+              }}
+              onRequestHint={async () => {
+                const res = await requestAIHint(session.sessionId, sandboxCode);
+                return res.hint;
+              }}
+            />
           </div>
         )}
 
@@ -385,6 +437,27 @@ export default function LiveInterview({ session, parsedResume, onFinish, onCance
             <div className="flex flex-col gap-1 w-full border-t border-slate-900/60 pt-3 text-left">
               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Category Type</span>
               <span className="text-sm font-extrabold text-indigo-400">{currentCategory} Evaluation</span>
+            </div>
+          </div>
+
+          {/* AI Voice Copilot Mode Toggle */}
+          <div className="p-5 rounded-2xl bg-[#111827]/60 border border-slate-900 flex flex-col gap-3">
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center justify-between">
+              Voice Mode
+              <span className={`w-1.5 h-1.5 rounded-full ${voiceMode ? 'bg-indigo-400 animate-pulse' : 'bg-slate-600'}`} />
+            </span>
+            <div className="flex items-center justify-between gap-3 text-left">
+              <span className="text-[10px] text-slate-400 leading-normal">Hands-free automatic mic tracking and Text-to-Speech</span>
+              <button 
+                onClick={() => setVoiceMode(!voiceMode)}
+                className={`p-2 rounded-xl border transition-all ${
+                  voiceMode 
+                    ? 'bg-indigo-600/10 border-indigo-500/35 text-indigo-400 animate-pulse' 
+                    : 'bg-[#111827] border-slate-800 text-slate-505 hover:text-slate-205'
+                }`}
+              >
+                {voiceMode ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+              </button>
             </div>
           </div>
 

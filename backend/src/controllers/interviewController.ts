@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
-import { generateNextQuestion, evaluateResponseText } from '../services/aiService';
+import { generateNextQuestion, evaluateResponseText, generateAIHint } from '../services/aiService';
+import { runCode } from '../services/codeRunner';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
@@ -82,6 +83,8 @@ export const submitAnswer = async (req: Request, res: Response) => {
         feedback: evaluation.feedback,
         strengths,
         weaknesses,
+        complexity: evaluation.complexity,
+        progression: evaluation.progression,
         roadmapSteps: ['Learn Redis Caching LRU policies', 'Solve 15 Graph DFS/BFS tasks', 'Use metrics in STAR behavioral stories']
       });
     }
@@ -103,9 +106,42 @@ export const submitAnswer = async (req: Request, res: Response) => {
       nextQuestion,
       evaluation: {
         score: evaluation.score.overall,
-        feedback: evaluation.feedback
+        feedback: evaluation.feedback,
+        complexity: evaluation.complexity,
+        progression: evaluation.progression
       }
     });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const getHint = async (req: Request, res: Response) => {
+  try {
+    const { sessionId, currentCode } = req.body;
+    const session = activeSessions[sessionId];
+    if (!session) {
+      return res.status(404).json({ error: 'Active interview session not found' });
+    }
+
+    const currentQuestion = session.history[session.history.length - 1].question;
+    const history = session.history.slice(0, -1);
+
+    const hint = await generateAIHint(currentQuestion, history, currentCode || '');
+    res.status(200).json({ hint });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const executeCode = async (req: Request, res: Response) => {
+  try {
+    const { code, language } = req.body;
+    if (!code) {
+      return res.status(400).json({ error: 'Code content is required' });
+    }
+    const result = await runCode(code, language || 'javascript');
+    res.status(200).json(result);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }

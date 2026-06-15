@@ -104,6 +104,8 @@ export default function App() {
       feedback: evaluationDetails?.feedback,
       strengths: evaluationDetails?.strengths,
       weaknesses: evaluationDetails?.weaknesses,
+      complexity: evaluationDetails?.complexity,
+      progression: evaluationDetails?.progression,
       roadmapSteps: evaluationDetails?.roadmapSteps
     };
     setHistory([newHistoryItem, ...history]);

@@ -167,3 +167,32 @@ export const submitInterviewAnswer = async (sessionId: string, answerText: strin
     }
   );
 };
+
+export const submitCodeForExecution = async (code: string, language: string) => {
+  return executeRequest(
+    '/interview/run-code',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code, language })
+    },
+    () => ({
+      success: true,
+      output: `[Mock Execution Output for ${language}]:\nCode executed successfully (simulated environment).\nInput length: ${code.length} characters.`
+    })
+  );
+};
+
+export const requestAIHint = async (sessionId: string, currentCode: string) => {
+  return executeRequest(
+    '/interview/hint',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionId, currentCode })
+    },
+    () => ({
+      hint: 'Consider how you can optimize the search complexity using a Hash Map instead of nested loops. This will reduce time complexity to O(N).'
+    })
+  );
+};
