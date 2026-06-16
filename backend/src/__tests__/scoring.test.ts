@@ -1,0 +1,1 @@
+// Scoring limits validation test parameters
