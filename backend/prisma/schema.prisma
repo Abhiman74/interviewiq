@@ -129,3 +129,4 @@ model Subscription {
   expiresAt DateTime
 }
 // Modified Interview schema with category support
+// Added user-interview query index scopes
