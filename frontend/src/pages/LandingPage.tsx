@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Shield, Cpu, Mic, BarChart4, ChevronRight, Check, Star, Play, MessageSquare } from 'lucide-react';
+import { Shield, Cpu, Mic, BarChart4, ChevronRight, Check, Star, MessageSquare, Play, HelpCircle, ArrowRight } from 'lucide-react';
 
 export default function LandingPage({ onStart }: { onStart: () => void }) {
-  const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'annual'>('monthly');
+  const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'annual'>('annual');
+  const [activeFaq, setActiveFaq] = useState<number | null>(null);
 
   const pricingPlans = [
     {
@@ -34,111 +35,214 @@ export default function LandingPage({ onStart }: { onStart: () => void }) {
     }
   ];
 
-  return (
-    <div className="flex-1 flex flex-col mesh-gradient">
-      {/* Hero Section */}
-      <section className="relative py-28 overflow-hidden flex flex-col items-center text-center px-6">
-        {/* Glow Spheres */}
-        <div className="absolute top-1/3 left-1/4 w-[350px] h-[350px] bg-blue-600/10 rounded-full blur-[100px] pointer-events-none animate-pulse-slow" />
-        <div className="absolute top-1/4 left-3/4 w-[400px] h-[400px] bg-purple-600/5 rounded-full blur-[120px] pointer-events-none" />
+  const faqItems = [
+    {
+      q: "How does the AI follow-up questioning work?",
+      a: "Unlike typical chatbots that ask rigid questions, InterviewIQ parses your response text for architectural terms. If you say you used a specific database, our adaptive engine dynamically generates contextual questions checking your reasoning, eviction limits, or scaling alternatives."
+    },
+    {
+      q: "Does the voice interview mode require special hardware?",
+      a: "No! It runs completely in the browser using the native Web Speech API. You only need to allow microphone access. We recommend Google Chrome or Safari for the best voice experience."
+    },
+    {
+      q: "How is the ATS resume score calculated?",
+      a: "Our parser runs semantic chunk comparisons between your resume and standard target roles. It measures skill overlaps, layout readability, keyword frequency, and identifies missing technology terms that ATS screening filters often look for."
+    },
+    {
+      q: "Can I paste custom job descriptions?",
+      a: "Yes! Paste any JD inside the Matcher and our engine will perform a vector similarity search to map your resume overlap, calculate a match rating %, highlight keyword gaps, and list probable interview questions."
+    }
+  ];
 
-        <div className="max-w-4xl mx-auto flex flex-col items-center z-10">
-          <span className="px-4 py-1.5 bg-blue-500/10 border border-blue-500/20 rounded-full text-xs font-semibold tracking-wider uppercase text-blue-400 mb-8 flex items-center gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-ping" />
-            InterviewIQ v1.0 is Live
+  return (
+    <div className="flex-1 flex flex-col mesh-overlay relative">
+      {/* Background Grid Accent */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#111827_1px,transparent_1px),linear-gradient(to_bottom,#111827_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none" />
+
+      {/* Sticky Header */}
+      <header className="border-b border-slate-900 bg-[#0B0F19]/80 backdrop-blur sticky top-0 z-50 px-8 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-8.5 h-8.5 rounded-xl bg-gradient-to-tr from-indigo-500 to-pink-500 flex items-center justify-center font-black text-lg text-white shadow-lg shadow-indigo-500/20">Q</div>
+          <span className="font-extrabold text-xl tracking-tight text-white">InterviewIQ</span>
+        </div>
+        <button 
+          onClick={onStart}
+          className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-pink-650 hover:from-indigo-550 hover:to-pink-550 active:scale-95 transition text-xs font-bold rounded-xl shadow-xl shadow-indigo-500/10 text-white"
+        >
+          Sign In
+        </button>
+      </header>
+
+      {/* Hero Section */}
+      <section className="relative pt-28 pb-20 flex flex-col lg:flex-row items-center justify-between max-w-6xl mx-auto px-6 w-full gap-12 z-10">
+        <div className="flex-1 flex flex-col text-left items-start max-w-xl">
+          <span className="px-3.5 py-1.5 bg-indigo-500/10 border border-indigo-500/20 rounded-full text-[10px] font-bold tracking-wider uppercase text-indigo-400 mb-6 flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-ping" />
+            AI Mock Simulator loop v1.0
           </span>
-          <h1 className="text-5xl sm:text-6xl md:text-8xl font-black tracking-tight text-white mb-8 leading-[1.1]">
-            Nail Your Tech loops with <br />
-            <span className="bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent">InterviewIQ AI</span>
+          <h1 className="text-4xl sm:text-5xl lg:text-7xl font-black tracking-tight text-white mb-6 leading-[1.15]">
+            Redefining AI <br />
+            <span className="bg-gradient-to-r from-indigo-400 via-pink-400 to-cyan-400 bg-clip-text text-transparent">Mock Interviews</span>
           </h1>
-          <p className="text-base sm:text-lg md:text-xl text-slate-400 max-w-2xl mb-12 leading-relaxed">
-            Upload your resume, compare against any Job Description, and experience hyper-realistic voice interviews tailored to Google, Amazon, Microsoft, and startups.
+          <p className="text-sm sm:text-base text-slate-400 mb-10 leading-relaxed">
+            Upload your resume, paste a target job description, and run hyper-realistic voice simulations. Analyze technical depth, speech confidence, and grammar clarity in real-time.
           </p>
-          <div className="flex flex-col sm:flex-row items-center gap-4">
+          <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
             <button 
               onClick={onStart}
-              className="glow-button flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 rounded-xl font-extrabold text-white shadow-xl shadow-blue-500/15 transition-all transform active:scale-95"
+              className="glow-button w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-indigo-600 to-pink-650 hover:from-indigo-550 hover:to-pink-550 rounded-xl font-extrabold text-sm text-white shadow-xl shadow-indigo-500/15 transition-all transform active:scale-95"
             >
-              Start Free Simulation <ChevronRight className="w-5 h-5" />
+              Start Free Simulation <ChevronRight className="w-4 h-4" />
             </button>
-            <a href="#features" className="px-6 py-4 bg-slate-900/60 hover:bg-slate-900 border border-slate-850 hover:border-slate-800 text-slate-300 font-bold rounded-xl transition">
+            <a href="#features" className="w-full sm:w-auto text-center px-6 py-4 bg-slate-900/60 hover:bg-slate-900 border border-slate-850 hover:border-slate-800 text-slate-300 font-bold rounded-xl transition text-sm">
               Explore Features
             </a>
+          </div>
+        </div>
+
+        {/* Hero Illustration / Visual representation */}
+        <div className="flex-1 relative w-full max-w-md lg:max-w-none flex items-center justify-center">
+          <div className="absolute w-[300px] h-[300px] bg-indigo-500/10 rounded-full blur-[80px] pointer-events-none animate-pulse-slow" />
+          
+          {/* Mockup layout */}
+          <div className="w-full max-w-sm rounded-2xl border border-slate-900 bg-slate-950 p-6 flex flex-col gap-4 relative animate-float shadow-2xl shadow-indigo-950/20">
+            <div className="flex items-center justify-between border-b border-slate-900 pb-3 text-[10px] font-bold text-slate-500">
+              <span>GOOGLE SYSTEM DESIGN MOCK</span>
+              <span className="text-emerald-400">ACTIVE</span>
+            </div>
+            
+            {/* Visual AI bubble */}
+            <div className="p-3.5 rounded-xl bg-slate-900/50 border border-slate-850 text-xs text-slate-350 leading-relaxed">
+              "Why choose a Redis distributed cache system over standard memory caches for this scaling threshold?"
+            </div>
+
+            {/* Visual audio wave representation */}
+            <div className="h-12 bg-slate-950 rounded-xl flex items-center justify-center gap-1.5 px-6 border border-slate-900/80">
+              {[2,4,7,5,3,6,8,5,2,4,6,7,3,2,5].map((h, i) => (
+                <span key={i} className="w-0.5 bg-indigo-400/60 rounded" style={{ height: `${h * 4}px` }} />
+              ))}
+            </div>
+
+            <div className="flex gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-red-500" />
+              <span className="w-2.5 h-2.5 rounded-full bg-yellow-500" />
+              <span className="w-2.5 h-2.5 rounded-full bg-green-500" />
+            </div>
           </div>
         </div>
       </section>
 
       {/* Trusted Logos Strip */}
-      <section className="py-8 border-y border-slate-900/80 bg-slate-950/20 text-center px-6">
-        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-4">ENGINEERS ON INTERVIEWIQ HAVE RECENTLY RECEIVED OFFERS FROM</span>
-        <div className="flex flex-wrap justify-center items-center gap-8 md:gap-16 opacity-40 grayscale contrast-200">
-          <span className="font-extrabold text-lg tracking-wider text-slate-400">GOOGLE</span>
-          <span className="font-extrabold text-lg tracking-wider text-slate-400">AMAZON</span>
-          <span className="font-extrabold text-lg tracking-wider text-slate-400">MICROSOFT</span>
-          <span className="font-extrabold text-lg tracking-wider text-slate-400">STRIPE</span>
-          <span className="font-extrabold text-lg tracking-wider text-slate-400">NETFLIX</span>
+      <section className="py-8 border-y border-slate-900 bg-[#0B0F19]/60 text-center px-6">
+        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-4">ACCEPTED BY ENGINEERS AT</span>
+        <div className="flex flex-wrap justify-center items-center gap-8 md:gap-16 opacity-30 grayscale contrast-200 text-sm font-black tracking-widest text-slate-400">
+          <span>GOOGLE</span>
+          <span>AMAZON</span>
+          <span>MICROSOFT</span>
+          <span>STRIPE</span>
+          <span>NETFLIX</span>
         </div>
       </section>
 
       {/* Features Grid */}
-      <section id="features" className="py-24 px-6 border-t border-slate-900/60 scroll-mt-20">
+      <section id="features" className="py-28 px-6 scroll-mt-10">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-20">
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">Built for High-Stakes Technical Preparation</h2>
-            <p className="text-slate-400 mt-4 max-w-xl mx-auto text-sm leading-relaxed">We went beyond basic chat templates. InterviewIQ scales responses dynamically based on real-time transcripts and your resume.</p>
+            <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider">CORE MODULES</span>
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight mt-2">Engineered for Technical Mastery</h2>
+            <p className="text-slate-400 mt-4 max-w-xl mx-auto text-sm leading-relaxed">Every feature is modeled after actual assessment workflows used by principal staff loops.</p>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="p-8 rounded-2xl glass-morphism glow-card flex gap-6 items-start">
-              <div className="p-3.5 bg-blue-500/10 border border-blue-500/10 rounded-xl text-blue-400 shrink-0"><Cpu className="w-5.5 h-5.5" /></div>
+            <div className="p-8 rounded-2xl glass-panel premium-card flex gap-6 items-start">
+              <div className="p-3 bg-blue-500/10 border border-blue-500/10 rounded-xl text-blue-400 shrink-0"><Cpu className="w-5.5 h-5.5" /></div>
               <div>
-                <h3 className="text-lg font-bold mb-2 text-slate-200">Resume Intelligence Parser</h3>
-                <p className="text-slate-400 text-sm leading-relaxed">Extracts achievements, technologies, and projects. Generates an ATS compatibility rating and highlights missing key technology terms.</p>
+                <h3 className="text-base font-bold mb-2 text-slate-200">Resume Intelligence</h3>
+                <p className="text-slate-450 text-xs leading-relaxed">Parsed extraction analyzes accomplishments, ratings, and structural errors, mapping compatibility checks dynamically.</p>
               </div>
             </div>
-            <div className="p-8 rounded-2xl glass-morphism glow-card flex gap-6 items-start">
-              <div className="p-3.5 bg-indigo-500/10 border border-indigo-500/10 rounded-xl text-indigo-400 shrink-0"><Mic className="w-5.5 h-5.5" /></div>
+            <div className="p-8 rounded-2xl glass-panel premium-card flex gap-6 items-start">
+              <div className="p-3 bg-indigo-500/10 border border-indigo-500/10 rounded-xl text-indigo-400 shrink-0"><Mic className="w-5.5 h-5.5" /></div>
               <div>
-                <h3 className="text-lg font-bold mb-2 text-slate-200">Interactive Voice Mode</h3>
-                <p className="text-slate-400 text-sm leading-relaxed">Uses Speech-to-Text and Text-to-Speech to conduct hands-free verbal mocks. Real-time response timer replicates actual pressure bounds.</p>
+                <h3 className="text-base font-bold mb-2 text-slate-200">Interactive Voice Mocks</h3>
+                <p className="text-slate-450 text-xs leading-relaxed">Experience voice interactions using STT/TTS loops. Custom response timers replicate high-pressure board environments.</p>
               </div>
             </div>
-            <div className="p-8 rounded-2xl glass-morphism glow-card flex gap-6 items-start">
-              <div className="p-3.5 bg-cyan-500/10 border border-cyan-500/10 rounded-xl text-cyan-400 shrink-0"><Shield className="w-5.5 h-5.5" /></div>
+            <div className="p-8 rounded-2xl glass-panel premium-card flex gap-6 items-start">
+              <div className="p-3 bg-pink-500/10 border border-pink-500/10 rounded-xl text-pink-400 shrink-0"><MessageSquare className="w-5.5 h-5.5" /></div>
               <div>
-                <h3 className="text-lg font-bold mb-2 text-slate-200">Adaptive Follow-Up Engine</h3>
-                <p className="text-slate-400 text-sm leading-relaxed">Challenges your implementation details. Mention you used Redis, and the AI immediately probes cluster replication, shards, and eviction limits.</p>
+                <h3 className="text-base font-bold mb-2 text-slate-200">Adaptive Follow-Up Engine</h3>
+                <p className="text-slate-450 text-xs leading-relaxed">AI probes decisions based on your text transcripts. Discuss scaling choices and the engine instantly questions limits.</p>
               </div>
             </div>
-            <div className="p-8 rounded-2xl glass-morphism glow-card flex gap-6 items-start">
-              <div className="p-3.5 bg-emerald-500/10 border border-emerald-500/10 rounded-xl text-emerald-400 shrink-0"><BarChart4 className="w-5.5 h-5.5" /></div>
+            <div className="p-8 rounded-2xl glass-panel premium-card flex gap-6 items-start">
+              <div className="p-3 bg-cyan-500/10 border border-cyan-500/10 rounded-xl text-cyan-400 shrink-0"><BarChart4 className="w-5.5 h-5.5" /></div>
               <div>
-                <h3 className="text-lg font-bold mb-2 text-slate-200">Structured Analytical Rating</h3>
-                <p className="text-slate-400 text-sm leading-relaxed">Generates score breakdowns across technical depth, problem-solving, behavioral traits, and communication alongside a customized learning roadmap.</p>
+                <h3 className="text-base font-bold mb-2 text-slate-200">Detailed Feedback Reports</h3>
+                <p className="text-slate-450 text-xs leading-relaxed">Breaks down scores across technical depth, verbal confidence, behavioral matching, and communication pacing.</p>
               </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* How it Works with connectors */}
+      <section className="py-24 px-6 border-t border-slate-900 bg-slate-950/20">
+        <div className="max-w-5xl mx-auto flex flex-col items-center">
+          <div className="text-center mb-20">
+            <span className="text-[10px] font-bold text-pink-400 uppercase tracking-wider">PROCESS FLOW</span>
+            <h2 className="text-3xl font-extrabold text-white tracking-tight mt-2">How InterviewIQ Works</h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 relative w-full">
+            {/* Step 1 */}
+            <div className="flex flex-col items-center text-center relative z-10">
+              <div className="w-12 h-12 rounded-xl bg-[#111827] border border-slate-800 flex items-center justify-center font-bold text-indigo-400 text-sm shadow-lg">1</div>
+              <h4 className="font-bold text-slate-200 text-xs mt-4">Upload Resume</h4>
+              <p className="text-[10px] text-slate-500 mt-2 max-w-[150px] leading-relaxed">Upload your PDF resume to extract skills and projects.</p>
+            </div>
+            
+            {/* Step 2 */}
+            <div className="flex flex-col items-center text-center relative z-10">
+              <div className="w-12 h-12 rounded-xl bg-[#111827] border border-slate-800 flex items-center justify-center font-bold text-indigo-400 text-sm shadow-lg">2</div>
+              <h4 className="font-bold text-slate-200 text-xs mt-4">Match Job Role</h4>
+              <p className="text-[10px] text-slate-500 mt-2 max-w-[150px] leading-relaxed">Paste your target job specs to map keyword gaps.</p>
+            </div>
+
+            {/* Step 3 */}
+            <div className="flex flex-col items-center text-center relative z-10">
+              <div className="w-12 h-12 rounded-xl bg-[#111827] border border-slate-800 flex items-center justify-center font-bold text-indigo-400 text-sm shadow-lg">3</div>
+              <h4 className="font-bold text-slate-200 text-xs mt-4">Run Simulation</h4>
+              <p className="text-[10px] text-slate-500 mt-2 max-w-[150px] leading-relaxed">Conduct voice mock loop with adaptive AI followups.</p>
+            </div>
+
+            {/* Step 4 */}
+            <div className="flex flex-col items-center text-center relative z-10">
+              <div className="w-12 h-12 rounded-xl bg-[#111827] border border-slate-800 flex items-center justify-center font-bold text-indigo-400 text-sm shadow-lg">4</div>
+              <h4 className="font-bold text-slate-200 text-xs mt-4">Obtain Roadmap</h4>
+              <p className="text-[10px] text-slate-500 mt-2 max-w-[150px] leading-relaxed">Review strengths, weaknesses, and custom practice paths.</p>
             </div>
           </div>
         </div>
       </section>
 
       {/* Pricing Section */}
-      <section className="py-24 px-6 border-t border-slate-900/60 bg-slate-950/20">
+      <section className="py-28 px-6 border-t border-slate-900">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16 flex flex-col items-center">
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">Plans for Every Level</h2>
-            <p className="text-slate-400 mt-4 text-sm">Flexible subscription tiers. Save 20% on annual billing cycles.</p>
+            <span className="text-[10px] font-bold text-cyan-400 uppercase tracking-wider">PRICING TIERS</span>
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight mt-2">Plans Built to Scale</h2>
             
-            {/* Toggle Billing */}
             <div className="mt-8 flex bg-slate-900 border border-slate-850 p-1 rounded-xl">
               <button 
                 onClick={() => setBillingPeriod('monthly')}
-                className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${billingPeriod === 'monthly' ? 'bg-blue-600 text-white' : 'text-slate-400'}`}
+                className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${billingPeriod === 'monthly' ? 'bg-indigo-650 text-white shadow-lg shadow-indigo-500/10' : 'text-slate-500'}`}
               >
                 Monthly
               </button>
               <button 
                 onClick={() => setBillingPeriod('annual')}
-                className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${billingPeriod === 'annual' ? 'bg-blue-600 text-white' : 'text-slate-400'}`}
+                className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${billingPeriod === 'annual' ? 'bg-indigo-650 text-white shadow-lg shadow-indigo-500/10' : 'text-slate-500'}`}
               >
                 Annual (20% Off)
               </button>
@@ -151,20 +255,20 @@ export default function LandingPage({ onStart }: { onStart: () => void }) {
                 key={plan.name}
                 className={`p-8 rounded-2xl border flex flex-col justify-between transition-all duration-300 relative ${
                   plan.highlighted 
-                    ? 'bg-slate-900/60 border-blue-500 shadow-2xl shadow-blue-500/5 glow-card' 
+                    ? 'bg-slate-900/40 border-indigo-500 shadow-2xl shadow-indigo-500/5 glow-card' 
                     : 'bg-slate-950/40 border-slate-900 glow-card'
                 }`}
               >
                 {plan.highlighted && (
-                  <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-3 py-1 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full text-[10px] font-black uppercase tracking-wider text-white">
-                    Most Popular
+                  <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-3 py-1 bg-gradient-to-r from-indigo-550 to-pink-550 rounded-full text-[9px] font-black uppercase tracking-wider text-white">
+                    RECOMMENDED
                   </span>
                 )}
                 <div>
-                  <span className="text-xs font-black tracking-wider uppercase text-slate-500">{plan.name}</span>
+                  <span className="text-[10px] font-black tracking-wider uppercase text-slate-500">{plan.name}</span>
                   <div className="flex items-baseline gap-2 mt-4">
                     <span className="text-4xl font-black text-white">{plan.price}</span>
-                    <span className="text-xs text-slate-500">/ {plan.period}</span>
+                    <span className="text-xs text-slate-550">/ {plan.period}</span>
                   </div>
                   <p className="text-xs text-slate-400 mt-4 leading-relaxed">{plan.desc}</p>
                   
@@ -184,8 +288,8 @@ export default function LandingPage({ onStart }: { onStart: () => void }) {
                   onClick={onStart}
                   className={`w-full py-3.5 rounded-xl font-bold text-xs mt-8 transition-all active:scale-95 ${
                     plan.highlighted 
-                      ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-900/20' 
-                      : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-850'
+                      ? 'bg-gradient-to-r from-indigo-650 to-pink-650 text-white shadow-lg shadow-indigo-500/10' 
+                      : 'bg-slate-900 hover:bg-slate-850 text-slate-300 border border-slate-850'
                   }`}
                 >
                   {plan.cta}
@@ -196,49 +300,68 @@ export default function LandingPage({ onStart }: { onStart: () => void }) {
         </div>
       </section>
 
-      {/* Testimonials */}
-      <section className="py-24 px-6 border-t border-slate-900/60">
-        <div className="max-w-4xl mx-auto flex flex-col items-center">
-          <div className="text-center mb-16">
-            <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest">SUCCESS STORIES</span>
-            <h2 className="text-3xl font-extrabold text-white tracking-tight mt-2">What candidates are saying</h2>
+      {/* FAQ Accordions Section */}
+      <section className="py-24 px-6 border-t border-slate-900/60 bg-slate-950/10">
+        <div className="max-w-3xl mx-auto flex flex-col gap-12">
+          <div className="text-center">
+            <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider">QUESTIONS</span>
+            <h2 className="text-3xl font-extrabold text-white tracking-tight mt-2">Frequently Asked Questions</h2>
           </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full">
-            <div className="p-6 rounded-2xl glass-morphism flex flex-col gap-4">
-              <div className="flex gap-1"><Star className="w-4 h-4 fill-amber-400 text-amber-400" />{Array(4).fill(0).map((_, i) => <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />)}</div>
-              <p className="text-slate-300 text-xs italic leading-relaxed">
-                "The adaptive follow-up feature on Redis cluster sharding matched the exact question I got at Stripe! Got the offer."
-              </p>
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center font-bold text-xs text-white">S</div>
-                <div>
-                  <h4 className="font-bold text-xs text-slate-200">Sanjay K.</h4>
-                  <p className="text-[10px] text-slate-500">Incoming SWE at Stripe</p>
-                </div>
-              </div>
-            </div>
 
-            <div className="p-6 rounded-2xl glass-morphism flex flex-col gap-4">
-              <div className="flex gap-1"><Star className="w-4 h-4 fill-amber-400 text-amber-400" />{Array(4).fill(0).map((_, i) => <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />)}</div>
-              <p className="text-slate-300 text-xs italic leading-relaxed">
-                "Voice mode made mock prep feel real. The AI scoring pinpointed my lack of metrics depth, which I corrected before my interviews."
-              </p>
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center font-bold text-xs text-white">M</div>
-                <div>
-                  <h4 className="font-bold text-xs text-slate-200">Mia W.</h4>
-                  <p className="text-[10px] text-slate-500">Data Analyst at Capital One</p>
-                </div>
+          <div className="flex flex-col gap-4">
+            {faqItems.map((item, idx) => (
+              <div 
+                key={idx} 
+                className="border border-slate-900 bg-slate-950/30 rounded-xl overflow-hidden"
+              >
+                <button
+                  onClick={() => setActiveFaq(activeFaq === idx ? null : idx)}
+                  className="w-full px-6 py-4 flex items-center justify-between text-left font-semibold text-slate-200 text-xs sm:text-sm hover:bg-slate-900/40 transition"
+                >
+                  <span>{item.q}</span>
+                  <ChevronRight className={`w-4 h-4 text-slate-500 transition-all ${activeFaq === idx ? 'rotate-90' : ''}`} />
+                </button>
+                {activeFaq === idx && (
+                  <div className="px-6 pb-5 pt-1 text-xs text-slate-450 leading-relaxed border-t border-slate-900/50 mt-1">
+                    {item.a}
+                  </div>
+                )}
               </div>
-            </div>
+            ))}
           </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-slate-900/60 py-12 px-6 bg-slate-950/80 text-center text-xs text-slate-500">
-        <p>© 2026 InterviewIQ Platform. All rights reserved. Designed for elite preparation.</p>
+      <footer className="border-t border-slate-900/80 py-16 px-8 bg-slate-950/80 text-xs text-slate-500">
+        <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-500 to-pink-500 flex items-center justify-center font-black text-sm text-white">Q</div>
+              <span className="font-extrabold text-sm tracking-tight text-white">InterviewIQ</span>
+            </div>
+            <p className="text-[11px] text-slate-600 mt-2 leading-relaxed">Elevating technical and behavioral candidate mock evaluations globally.</p>
+          </div>
+          <div className="flex flex-col gap-2">
+            <span className="font-bold text-slate-350 text-[10px] uppercase tracking-wider mb-2">Product</span>
+            <a href="#" className="hover:text-slate-300 transition text-[11px]">Mock Simulator</a>
+            <a href="#" className="hover:text-slate-300 transition text-[11px]">Resume Scoring</a>
+            <a href="#" className="hover:text-slate-300 transition text-[11px]">Pricing Plans</a>
+          </div>
+          <div className="flex flex-col gap-2">
+            <span className="font-bold text-slate-350 text-[10px] uppercase tracking-wider mb-2">Resources</span>
+            <a href="#" className="hover:text-slate-300 transition text-[11px]">System Design Guides</a>
+            <a href="#" className="hover:text-slate-300 transition text-[11px]">STAR Templates</a>
+            <a href="#" className="hover:text-slate-300 transition text-[11px]">FAQ</a>
+          </div>
+          <div className="flex flex-col gap-2">
+            <span className="font-bold text-slate-350 text-[10px] uppercase tracking-wider mb-2">Company</span>
+            <a href="#" className="hover:text-slate-300 transition text-[11px]">Careers</a>
+            <a href="#" className="hover:text-slate-300 transition text-[11px]">Privacy Policy</a>
+            <a href="#" className="hover:text-slate-300 transition text-[11px]">Contact</a>
+          </div>
+        </div>
+        <p className="text-center text-[10px] border-t border-slate-900/60 pt-8 text-slate-650">© 2026 InterviewIQ Platform. Built for Stripe, Linear, and Vercel level elegance.</p>
       </footer>
     </div>
   );

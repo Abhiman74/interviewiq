@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Mic, MicOff, Video, VideoOff, Timer, Volume2, ShieldAlert, CheckCircle, RefreshCw, BarChart2, ShieldCheck, Activity } from 'lucide-react';
+import { Mic, MicOff, Video, VideoOff, Timer, Volume2, ShieldAlert, CheckCircle, RefreshCw, BarChart2, ShieldCheck, ArrowRight, CornerDownLeft } from 'lucide-react';
 import { ActiveSession, ParsedResume } from '../App';
 
 interface LiveInterviewProps {
@@ -16,6 +16,8 @@ export default function LiveInterview({ session, parsedResume, onFinish, onCance
   const [isRecording, setIsRecording] = useState(false);
   const [cameraOn, setCameraOn] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [chatHistory, setChatHistory] = useState<any[]>([]);
+  const [aiTyping, setAiTyping] = useState(false);
   
   // Timer States
   const [totalSeconds, setTotalSeconds] = useState(0);
@@ -81,12 +83,16 @@ export default function LiveInterview({ session, parsedResume, onFinish, onCance
     }
   };
 
-  // Speak first question on load
+  // Setup first question
   useEffect(() => {
     if (session.questions.length > 0) {
+      setAiTyping(true);
       setTimeout(() => {
-        speakQuestion(session.questions[0].content);
-      }, 500);
+        setAiTyping(false);
+        const firstQ = session.questions[0].content;
+        setChatHistory([{ sender: 'ai', text: firstQ }]);
+        speakQuestion(firstQ);
+      }, 1500);
     }
     return () => {
       if ('speechSynthesis' in window) window.speechSynthesis.cancel();
@@ -148,18 +154,31 @@ export default function LiveInterview({ session, parsedResume, onFinish, onCance
         questionId: currentQ.id,
         question: currentQ.content,
         category: currentQ.category,
-        answerText: inputText || '[No transcribed text provided]',
+        answerText: inputText || '[No response text provided]',
         timeSpentSeconds: questionSeconds
       }
     ];
     setAnswers(newAnswers);
+
+    // Update Chat History
+    const updatedHistory = [
+      ...chatHistory,
+      { sender: 'user', text: inputText || '[Text input provided]' }
+    ];
+    setChatHistory(updatedHistory);
     setInputText('');
     setQuestionSeconds(0);
 
     const nextIdx = currentIdx + 1;
     if (nextIdx < session.questions.length) {
       setCurrentIdx(nextIdx);
-      speakQuestion(session.questions[nextIdx].content);
+      setAiTyping(true);
+      setTimeout(() => {
+        setAiTyping(false);
+        const nextQ = session.questions[nextIdx].content;
+        setChatHistory([...updatedHistory, { sender: 'ai', text: nextQ }]);
+        speakQuestion(nextQ);
+      }, 1500);
     } else {
       let totalTranscribedWords = newAnswers.reduce((acc, curr) => acc + curr.answerText.split(' ').length, 0);
       let overallMockScore = Math.min(68 + Math.floor(totalTranscribedWords / 12), 95);
@@ -173,156 +192,181 @@ export default function LiveInterview({ session, parsedResume, onFinish, onCance
     return `${m}:${s}`;
   };
 
-  // Mock Real-time Speech Metrics
-  const mockConfidence = inputText.length > 50 ? 'Strong' : (inputText.length > 10 ? 'Evaluating' : 'Waiting');
-  const mockPace = questionSeconds > 0 ? `${Math.round((inputText.split(' ').length / questionSeconds) * 60)} WPM` : '0 WPM';
+  // Mock indicators
+  const currentCategory = session.questions[currentIdx]?.category || 'Technical';
+  const progressPct = ((currentIdx + 1) / session.questions.length) * 100;
 
   return (
-    <div className="flex-1 bg-slate-950 flex flex-col">
+    <div className="flex-1 bg-[#0B0F19] flex flex-col h-screen overflow-hidden">
       {/* Top Banner Status Info */}
-      <div className="border-b border-slate-900 bg-slate-950/40 px-6 py-3 flex items-center justify-between text-[11px] text-slate-400">
+      <div className="border-b border-slate-900 bg-[#111827]/30 px-6 py-4 flex items-center justify-between text-xs text-slate-400 sticky top-0 z-30 shrink-0">
         <div className="flex items-center gap-6">
-          <span className="flex items-center gap-1.5"><Timer className="w-3.5 h-3.5 text-blue-400" /> Session: {formatTime(totalSeconds)}</span>
-          <span className="flex items-center gap-1.5"><RefreshCw className="w-3.5 h-3.5 text-indigo-400 animate-spin-slow" /> Active Format: {session.style}</span>
+          <span className="flex items-center gap-2 font-semibold"><Timer className="w-4 h-4 text-indigo-400" /> Active Session: {formatTime(totalSeconds)}</span>
+          <span className="flex items-center gap-2 font-semibold text-slate-500">Company Format: {session.style}</span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5">
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-          <span className="text-emerald-400 font-bold uppercase tracking-widest text-[10px]">Live Session Active</span>
+          <span className="text-emerald-400 font-extrabold uppercase tracking-widest text-[10px]">LIVE EVALUATION PIPELINE</span>
         </div>
       </div>
 
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 p-6 gap-6 max-w-7xl mx-auto w-full z-10">
-        {/* Left Columns - Avatar & Video feeds */}
-        <div className="lg:col-span-2 flex flex-col gap-6">
-          {/* Avatar Panel */}
-          <div className="flex-1 rounded-2xl glass-morphism border border-slate-900 p-8 flex flex-col items-center justify-center text-center relative overflow-hidden min-h-[350px]">
-            <div className="absolute inset-0 bg-gradient-to-t from-blue-950/10 to-transparent pointer-events-none" />
-            
-            {/* Visual Equalizer Speaking Indicator */}
-            <div className="flex items-center gap-1.5 mb-6 h-12">
-              {isSpeaking ? (
-                [1,2,3,4,5,6,5,4,3,2,1].map((h, i) => (
-                  <span 
-                    key={i} 
-                    className="w-1 bg-gradient-to-t from-blue-500 to-indigo-400 rounded-full animate-bounce" 
-                    style={{ height: `${h * 8}px`, animationDelay: `${i * 0.08}s` }} 
-                  />
-                ))
-              ) : (
-                <span className="text-[10px] text-slate-500 font-mono tracking-widest uppercase">AI is waiting for your response</span>
+      {/* Split Screen Layout */}
+      <div className="flex-1 flex flex-col md:flex-row overflow-hidden relative">
+        {/* Left Side: AI Interviewer Chat Loop */}
+        <div className="flex-1 flex flex-col border-r border-slate-900/60 bg-[#0B0F19]/20 overflow-y-auto p-6 relative">
+          <div className="flex-1 flex flex-col gap-4 overflow-y-auto mb-20 scrollbar-thin">
+            {chatHistory.map((chat, idx) => (
+              <div 
+                key={idx} 
+                className={`flex gap-3.5 max-w-lg ${chat.sender === 'user' ? 'self-end flex-row-reverse' : 'self-start'}`}
+              >
+                {/* Avatar */}
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 ${
+                  chat.sender === 'user' 
+                    ? 'bg-gradient-to-tr from-pink-500 to-rose-500 text-white' 
+                    : 'bg-gradient-to-tr from-indigo-500 to-purple-500 text-white shadow-lg shadow-indigo-500/10'
+                }`}>
+                  {chat.sender === 'user' ? 'U' : 'AI'}
+                </div>
+
+                {/* Bubble */}
+                <div className={`p-4 rounded-2xl text-xs sm:text-sm leading-relaxed border ${
+                  chat.sender === 'user'
+                    ? 'bg-indigo-600/10 border-indigo-500/20 text-indigo-200'
+                    : 'bg-[#111827]/80 border-slate-900 text-slate-200'
+                }`}>
+                  {chat.text}
+                </div>
+              </div>
+            ))}
+
+            {/* AI Typing Indicator */}
+            {aiTyping && (
+              <div className="flex gap-3.5 self-start items-center">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center font-bold text-xs text-white">AI</div>
+                <div className="px-4 py-3 rounded-2xl bg-[#111827]/80 border border-slate-900 flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-typing-dot" style={{ animationDelay: '0s' }} />
+                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-typing-dot" style={{ animationDelay: '0.2s' }} />
+                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-typing-dot" style={{ animationDelay: '0.4s' }} />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Typing/Voice Input Bar absolute at bottom */}
+          <div className="absolute bottom-4 left-6 right-6 p-3 bg-[#111827]/95 border border-slate-900 rounded-2xl flex items-center gap-4 shadow-xl z-20">
+            {/* Wave Mic Container */}
+            <div className="relative">
+              <button 
+                onClick={toggleRecording}
+                className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all ${
+                  isRecording 
+                    ? 'bg-red-500 text-white shadow-lg shadow-red-900/10' 
+                    : 'bg-indigo-600 hover:bg-indigo-500 text-white'
+                }`}
+              >
+                {isRecording ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+              </button>
+              {isRecording && (
+                <>
+                  <span className="absolute inset-0 rounded-xl border border-red-400/30 animate-wave" />
+                  <span className="absolute inset-0 rounded-xl border border-red-400/25 animate-wave" style={{ animationDelay: '0.6s' }} />
+                </>
               )}
             </div>
 
-            <div className="w-28 h-28 rounded-full bg-gradient-to-tr from-blue-600 via-indigo-500 to-purple-650 flex items-center justify-center border-4 border-slate-900 shadow-2xl relative">
-              <Volume2 className={`w-10 h-10 text-white ${isSpeaking ? 'animate-pulse scale-110' : ''}`} />
-              {isSpeaking && <span className="absolute inset-0 rounded-full border-4 border-blue-400/30 animate-ping" />}
-            </div>
-            
-            <h3 className="text-base font-bold text-white mt-6 tracking-wide">AI Interviewer Avatar</h3>
-            <p className="text-blue-400 text-[10px] font-black uppercase tracking-widest mt-1">Status: Active</p>
+            <input 
+              type="text" 
+              value={inputText}
+              onChange={(e) => setInputText(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleNextQuestion()}
+              placeholder={isRecording ? "Listening to your response..." : "Type your answer or speak by pressing mic..."}
+              className="flex-1 bg-transparent text-slate-200 outline-none placeholder-slate-650 text-xs sm:text-sm"
+            />
 
-            <div className="mt-8 bg-slate-900/80 border border-slate-850 rounded-2xl p-5 max-w-xl text-sm leading-relaxed text-slate-200">
-              "{session.questions[currentIdx]?.content}"
+            <button 
+              onClick={handleNextQuestion}
+              className="p-2 bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white rounded-xl transition flex items-center gap-1.5 text-xs font-bold shrink-0"
+            >
+              Submit <CornerDownLeft className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Right Side: Details & Live Camera Feeds */}
+        <div className="w-full md:w-80 bg-[#111827]/40 backdrop-blur-lg flex flex-col p-6 gap-6 overflow-y-auto">
+          {/* Question metrics circular progress */}
+          <div className="p-5 rounded-2xl bg-[#111827]/60 border border-slate-900 flex flex-col items-center text-center gap-3">
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Active Progress</span>
+            
+            {/* Circle progress mockup using SVG */}
+            <div className="w-24 h-24 relative flex items-center justify-center">
+              <svg className="w-full h-full transform -rotate-90">
+                <circle cx="48" cy="48" r="40" stroke="#1F2937" strokeWidth="6" fill="transparent" />
+                <circle 
+                  cx="48" cy="48" r="40" 
+                  stroke="url(#progress-glow)" 
+                  strokeWidth="6" 
+                  fill="transparent" 
+                  strokeDasharray={`${2 * Math.PI * 40}`}
+                  strokeDashoffset={`${2 * Math.PI * 40 * (1 - progressPct / 100)}`}
+                  strokeLinecap="round"
+                />
+                <defs>
+                  <linearGradient id="progress-glow" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#6366F1" />
+                    <stop offset="100%" stopColor="#EC4899" />
+                  </linearGradient>
+                </defs>
+              </svg>
+              <div className="absolute flex flex-col">
+                <span className="text-xl font-black text-white">{currentIdx + 1}/{session.questions.length}</span>
+                <span className="text-[8px] text-slate-500 uppercase tracking-widest mt-0.5">Tasks</span>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-1 w-full border-t border-slate-900/60 pt-3 text-left">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Category Type</span>
+              <span className="text-sm font-extrabold text-indigo-400">{currentCategory} Evaluation</span>
             </div>
           </div>
 
-          {/* User Video Frame / Listening status banner */}
-          <div className="h-44 rounded-2xl border border-slate-900 bg-slate-950/40 p-4 flex gap-4 items-center justify-between">
-            {/* Camera feed */}
-            <div className={`w-48 h-full bg-slate-900 border rounded-xl overflow-hidden relative flex items-center justify-center transition-all ${cameraOn ? 'border-emerald-500/30 shadow-lg shadow-emerald-500/5' : 'border-slate-800'}`}>
+          {/* Web Cam feed */}
+          <div className={`rounded-2xl border bg-[#111827]/60 p-4 flex flex-col gap-3 transition-all ${cameraOn ? 'border-emerald-500/30' : 'border-slate-900'}`}>
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Camera Monitor</span>
+            <div className="w-full h-32 bg-[#0B0F19] rounded-xl overflow-hidden relative flex items-center justify-center border border-slate-900/60">
               {cameraOn ? (
                 <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover scale-x-[-1]" />
               ) : (
                 <VideoOff className="w-8 h-8 text-slate-700" />
               )}
-              <span className={`absolute bottom-2 left-2 text-[8px] font-bold tracking-wider px-2 py-0.5 rounded-md uppercase ${cameraOn ? 'bg-emerald-500/90 text-white' : 'bg-slate-950/80 text-slate-400'}`}>
-                {cameraOn ? 'Rec Active' : 'Cam Preview'}
-              </span>
             </div>
-
-            {/* Speaking feedback */}
-            <div className="flex-1 flex flex-col justify-center gap-1.5 px-2">
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Metrics Monitoring</span>
-              <div className="flex items-center gap-4 mt-2">
-                <div className="flex flex-col">
-                  <span className="text-lg font-black text-white">{formatTime(questionSeconds)}</span>
-                  <span className="text-[10px] text-slate-500">time elapsed</span>
-                </div>
-                <div className="h-8 w-px bg-slate-900" />
-                <div className="flex flex-col">
-                  <span className="text-lg font-black text-white">{mockConfidence}</span>
-                  <span className="text-[10px] text-slate-500">voice confidence</span>
-                </div>
-                <div className="h-8 w-px bg-slate-900" />
-                <div className="flex flex-col">
-                  <span className="text-lg font-black text-white">{mockPace}</span>
-                  <span className="text-[10px] text-slate-500">speech rate</span>
-                </div>
-              </div>
-              <div className="flex gap-3 items-center mt-4 text-xs">
-                <button 
-                  onClick={toggleCamera} 
-                  className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl border text-xs font-bold transition-all ${
-                    cameraOn 
-                      ? 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800' 
-                      : 'bg-indigo-600/10 border-indigo-500/20 text-indigo-400 hover:bg-indigo-600/20'
-                  }`}
-                >
-                  {cameraOn ? <><VideoOff className="w-3.5 h-3.5" /> Stop Video</> : <><Video className="w-3.5 h-3.5" /> Start Video</>}
-                </button>
-                <button 
-                  onClick={() => speakQuestion(session.questions[currentIdx]?.content)}
-                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-850 bg-slate-900 text-slate-300 hover:bg-slate-800 text-xs font-bold"
-                >
-                  <Volume2 className="w-3.5 h-3.5 text-slate-400" /> Repeat Question
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Right Sidebar - Transcript & Actions */}
-        <div className="flex flex-col gap-6">
-          <div className="flex-1 rounded-2xl glass-morphism border border-slate-900 p-6 flex flex-col gap-4">
-            <div className="flex justify-between items-center border-b border-slate-900 pb-3">
-              <h3 className="font-bold text-slate-200 text-xs tracking-wide">Transcript Editor</h3>
-              <span className="text-[9px] font-bold bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded-md uppercase tracking-wider">WebSpeech STT</span>
-            </div>
-
-            <textarea
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              placeholder="Your answer will transcribe automatically here. Feel free to edit or type directly if you prefer..."
-              className="flex-1 bg-slate-950/60 border border-slate-900 rounded-xl p-4 text-slate-300 placeholder-slate-650 outline-none focus:border-blue-500/60 transition text-xs leading-relaxed resize-none font-sans"
-            />
-
-            <button
-              onClick={toggleRecording}
-              className={`w-full py-4 rounded-xl font-bold text-xs flex items-center justify-center gap-3 transition-all ${
-                isRecording 
-                  ? 'bg-red-650 hover:bg-red-550 text-white shadow-lg shadow-red-900/10 animate-pulse' 
-                  : 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-900/15'
+            <button 
+              onClick={toggleCamera}
+              className={`w-full py-2.5 rounded-xl text-xs font-bold transition-all border ${
+                cameraOn 
+                  ? 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200' 
+                  : 'bg-indigo-650/10 border-indigo-500/20 text-indigo-400 hover:bg-indigo-650/20'
               }`}
             >
-              {isRecording ? <><MicOff className="w-4 h-4" /> Stop Transcribing</> : <><Mic className="w-4 h-4" /> Start Speaking</>}
+              {cameraOn ? 'Stop Camera Feed' : 'Start Camera Feed'}
             </button>
           </div>
 
-          {/* Action Row */}
-          <div className="flex gap-3">
-            <button
-              onClick={onCancel}
-              className="flex-1 py-3.5 bg-slate-900 hover:bg-slate-850 text-slate-400 hover:text-slate-300 font-bold text-xs rounded-xl border border-slate-850 transition"
-            >
-              Abort Interview
-            </button>
-            <button
-              onClick={handleNextQuestion}
-              className="flex-1 py-3.5 bg-gradient-to-r from-blue-650 to-indigo-650 hover:from-blue-600 hover:to-indigo-600 text-white font-bold text-xs rounded-xl shadow-lg transition active:scale-95"
-            >
-              {currentIdx === session.questions.length - 1 ? 'Submit & Finish' : 'Next Question'}
-            </button>
+          {/* Live Tips Banner */}
+          <div className="p-5 rounded-2xl bg-[#111827]/30 border border-slate-900 flex flex-col gap-2.5 text-xs">
+            <span className="font-bold text-slate-350 flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-emerald-400" /> Interviewer Tips</span>
+            <p className="text-slate-450 leading-relaxed text-[11px]">
+              Speak clearly with normal conversational pacing. Try to frame situation-based answers using the STAR format (Situation, Task, Action, Result).
+            </p>
           </div>
+
+          <button 
+            onClick={onCancel}
+            className="w-full py-3.5 bg-red-650/5 hover:bg-red-650/10 text-red-400 border border-red-500/10 rounded-xl font-bold text-xs transition mt-auto active:scale-95"
+          >
+            Abort Session
+          </button>
         </div>
       </div>
     </div>
