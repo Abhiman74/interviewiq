@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, CheckCircle2, TrendingUp, AlertTriangle, BookOpen, ChevronRight, Award } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, TrendingUp, AlertTriangle, BookOpen, ChevronRight, Award, HelpCircle } from 'lucide-react';
 
 interface ResultsProps {
   interviewId: string | null;
@@ -10,48 +10,105 @@ interface ResultsProps {
 export default function InterviewResults({ interviewId, history, onBack }: ResultsProps) {
   const activeInterview = history.find(h => h.id === interviewId) || history[0];
 
+  // Letter Grade Heuristic
+  const getLetterGrade = (score: number) => {
+    if (score >= 90) return 'A+';
+    if (score >= 85) return 'A';
+    if (score >= 80) return 'B+';
+    if (score >= 75) return 'B';
+    return 'C+';
+  };
+
   const scoresBreakdown = [
-    { name: 'Technical Depth', value: activeInterview.score + 2, color: 'bg-blue-500' },
-    { name: 'Communication Clarity', value: activeInterview.score - 4, color: 'bg-indigo-500' },
-    { name: 'Problem Solving Speed', value: activeInterview.score + 1, color: 'bg-cyan-500' },
-    { name: 'Speech Confidence', value: activeInterview.score - 2, color: 'bg-emerald-500' },
-    { name: 'Behavioral Attributes', value: activeInterview.score + 3, color: 'bg-purple-500' }
+    { name: 'Technical Depth', value: activeInterview.score + 2, color: 'bg-[#6366F1]' },
+    { name: 'Communication Clarity', value: activeInterview.score - 4, color: 'bg-[#8B5CF6]' },
+    { name: 'Problem Solving Speed', value: activeInterview.score + 1, color: 'bg-[#22D3EE]' },
+    { name: 'Speech Confidence', value: activeInterview.score - 2, color: 'bg-[#10B981]' },
+    { name: 'Behavioral Attributes', value: activeInterview.score + 3, color: 'bg-[#EC4899]' }
   ];
 
+  // Calculate coordinates for SVG radar chart
+  const radarMetrics = [
+    { label: 'Technical', val: activeInterview.score + 2 },
+    { label: 'Communication', val: activeInterview.score - 4 },
+    { label: 'Problem Solving', val: activeInterview.score + 1 },
+    { label: 'Confidence', val: activeInterview.score - 2 },
+    { label: 'Behavioral', val: activeInterview.score + 3 }
+  ];
+
+  const getRadarPath = () => {
+    const radius = 40;
+    const center = 50;
+    const angleStep = (2 * Math.PI) / 5;
+    
+    const points = radarMetrics.map((m, idx) => {
+      const angle = idx * angleStep - Math.PI / 2; // Shift by 90deg to start at top
+      const valPct = m.val / 100;
+      const x = center + radius * valPct * Math.cos(angle);
+      const y = center + radius * valPct * Math.sin(angle);
+      return `${x},${y}`;
+    });
+    
+    return `M ${points.join(' L ')} Z`;
+  };
+
   return (
-    <div className="flex-1 max-w-5xl mx-auto px-6 py-12 w-full flex flex-col gap-8">
-      <button onClick={onBack} className="flex items-center gap-2 text-slate-400 hover:text-white transition self-start text-sm">
+    <div className="flex-1 max-w-5xl mx-auto px-8 py-12 w-full flex flex-col gap-8">
+      <button onClick={onBack} className="flex items-center gap-2 text-slate-400 hover:text-white transition self-start text-xs">
         <ArrowLeft className="w-4 h-4" /> Back to Dashboard
       </button>
 
       {/* Hero Header Results Card */}
-      <div className="p-8 rounded-2xl bg-gradient-to-r from-blue-900/30 via-indigo-900/20 to-purple-900/15 border border-blue-800/20 flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl shadow-blue-950/20">
+      <div className="p-8 rounded-2xl bg-gradient-to-r from-indigo-950/40 via-[#111827]/40 to-transparent border border-indigo-900/30 flex flex-col md:flex-row items-center justify-between gap-6 shadow-2xl shadow-indigo-950/10">
         <div className="flex items-center gap-5">
-          <div className="w-16 h-16 rounded-2xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400"><Award className="w-8 h-8" /></div>
+          <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400"><Award className="w-8 h-8" /></div>
           <div className="flex flex-col gap-1.5">
-            <h1 className="text-2xl font-extrabold text-white tracking-tight">Interview Evaluation Complete</h1>
-            <p className="text-slate-400 text-xs sm:text-sm">Simulated {activeInterview.role} Loop ({activeInterview.style})</p>
+            <h1 className="text-2xl font-black text-white tracking-tight">Evaluation Completed</h1>
+            <p className="text-slate-450 text-xs sm:text-sm">Simulated {activeInterview.role} loop ({activeInterview.style})</p>
           </div>
         </div>
-        <div className="flex flex-col items-center shrink-0">
-          <span className="text-5xl font-black text-emerald-400 tracking-tighter">{activeInterview.score}%</span>
-          <span className="text-[9px] font-black tracking-wider uppercase text-slate-500 mt-1.5">Overall IQ Rating</span>
+        
+        {/* Circular Score Badge with Letter Grade */}
+        <div className="flex items-center gap-6 shrink-0">
+          <div className="w-24 h-24 relative flex items-center justify-center">
+            <svg className="w-full h-full transform -rotate-90">
+              <circle cx="48" cy="48" r="40" stroke="#1F2937" strokeWidth="5" fill="transparent" />
+              <circle 
+                cx="48" cy="48" r="40" 
+                stroke="#10B981" 
+                strokeWidth="5" 
+                fill="transparent" 
+                strokeDasharray={`${2 * Math.PI * 40}`}
+                strokeDashoffset={`${2 * Math.PI * 40 * (1 - activeInterview.score / 100)}`}
+                strokeLinecap="round"
+              />
+            </svg>
+            <div className="absolute flex flex-col items-center justify-center">
+              <span className="text-2xl font-black text-emerald-400 tracking-tighter">{activeInterview.score}%</span>
+              <span className="text-[8px] font-black text-slate-500 tracking-widest uppercase">Score</span>
+            </div>
+          </div>
+
+          <div className="flex flex-col">
+            <span className="text-4xl font-black text-white">{getLetterGrade(activeInterview.score)}</span>
+            <span className="text-[9px] font-bold text-slate-500 tracking-widest uppercase mt-1">Simulated Grade</span>
+          </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Scores Breakdown Column */}
-        <div className="p-6 rounded-2xl glass-morphism flex flex-col gap-6">
-          <h3 className="font-extrabold text-slate-200 text-sm flex items-center gap-2 border-b border-slate-900 pb-3"><TrendingUp className="w-4.5 h-4.5 text-blue-400" /> Metric Scores</h3>
+        <div className="p-6 rounded-2xl glass-panel flex flex-col gap-6">
+          <h3 className="font-extrabold text-slate-200 text-sm flex items-center gap-2 border-b border-slate-900 pb-3"><TrendingUp className="w-4.5 h-4.5 text-indigo-400" /> Category Metrics</h3>
           
           <div className="flex flex-col gap-4">
             {scoresBreakdown.map(s => (
               <div key={s.name} className="flex flex-col gap-2">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-slate-450 font-medium">{s.name}</span>
-                  <span className="text-slate-200 font-bold">{s.value}%</span>
+                  <span className="text-slate-450 font-semibold">{s.name}</span>
+                  <span className="text-slate-250 font-bold">{s.value}%</span>
                 </div>
-                <div className="w-full bg-slate-900 rounded-full h-1.5 overflow-hidden">
+                <div className="w-full bg-[#0B0F19] rounded-full h-1.5 overflow-hidden border border-slate-900/60">
                   <div className={`${s.color} h-1.5 rounded-full`} style={{ width: `${s.value}%` }} />
                 </div>
               </div>
@@ -59,61 +116,92 @@ export default function InterviewResults({ interviewId, history, onBack }: Resul
           </div>
         </div>
 
-        {/* Strengths & Weaknesses */}
-        <div className="p-6 rounded-2xl glass-morphism flex flex-col gap-6">
-          <h3 className="font-extrabold text-slate-200 text-sm flex items-center gap-2 border-b border-slate-900 pb-3"><CheckCircle2 className="w-4.5 h-4.5 text-emerald-400" /> AI Feedback Summary</h3>
+        {/* Radar chart for skill analysis */}
+        <div className="p-6 rounded-2xl glass-panel flex flex-col gap-6 items-center">
+          <h3 className="font-extrabold text-slate-200 text-sm flex items-center gap-2 border-b border-slate-900 pb-3 w-full text-left"><HelpCircle className="w-4.5 h-4.5 text-pink-400" /> Skill Analysis Web</h3>
           
-          <div className="flex flex-col gap-5 text-xs">
-            <div className="flex flex-col gap-2.5">
-              <span className="font-semibold text-emerald-400 flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 shrink-0" /> Core Strengths</span>
-              <ul className="list-disc list-inside text-slate-400 pl-2 leading-relaxed flex flex-col gap-1.5">
-                <li>Demonstrates a strong analytical architecture understanding of microservices.</li>
-                <li>Clear verbal communication speed; low hesitation threshold.</li>
-                <li>Good query index planning and normalization explanations.</li>
-              </ul>
-            </div>
+          {/* Custom SVG Radar chart */}
+          <div className="w-48 h-48 relative flex items-center justify-center mt-2">
+            <svg className="w-full h-full" viewBox="0 0 100 100">
+              {/* Radar Grid Circles */}
+              <circle cx="50" cy="50" r="40" stroke="#1e293b" strokeWidth="0.5" fill="none" />
+              <circle cx="50" cy="50" r="30" stroke="#1e293b" strokeWidth="0.5" fill="none" />
+              <circle cx="50" cy="50" r="20" stroke="#1e293b" strokeWidth="0.5" fill="none" />
+              <circle cx="50" cy="50" r="10" stroke="#1e293b" strokeWidth="0.5" fill="none" />
+              
+              {/* Radial Web Axis lines */}
+              {[0, 72, 144, 216, 288].map((angle, idx) => {
+                const rad = (angle * Math.PI) / 180 - Math.PI / 2;
+                const x = 50 + 40 * Math.cos(rad);
+                const y = 50 + 40 * Math.sin(rad);
+                return <line key={idx} x1="50" y1="50" x2={x} y2={y} stroke="#1e293b" strokeWidth="0.5" />;
+              })}
 
-            <div className="flex flex-col gap-2.5 mt-2 border-t border-slate-900 pt-4">
-              <span className="font-semibold text-amber-500 flex items-center gap-1.5"><AlertTriangle className="w-4 h-4 shrink-0" /> Focus Weaknesses</span>
-              <ul className="list-disc list-inside text-slate-400 pl-2 leading-relaxed flex flex-col gap-1.5">
-                <li>Could improve in dynamic memory caching tradeoffs details.</li>
-                <li>System Design details lacked explicit load balancer sizing.</li>
-              </ul>
-            </div>
+              {/* Polygon Path */}
+              <path 
+                d={getRadarPath()} 
+                fill="rgba(99, 102, 241, 0.15)" 
+                stroke="#8B5CF6" 
+                strokeWidth="2" 
+              />
+            </svg>
+            <span className="absolute top-1 text-[8px] font-black text-slate-500 uppercase tracking-widest">Tech</span>
+            <span className="absolute right-1 text-[8px] font-black text-slate-500 uppercase tracking-widest">Comm</span>
+            <span className="absolute bottom-1 text-[8px] font-black text-slate-500 uppercase tracking-widest">Problem</span>
+            <span className="absolute left-1 text-[8px] font-black text-slate-500 uppercase tracking-widest">Solve</span>
           </div>
         </div>
       </div>
 
-      {/* Recommendations Roadmap */}
-      <div className="p-6 rounded-2xl glass-morphism flex flex-col gap-6">
-        <h3 className="font-extrabold text-slate-200 text-sm flex items-center gap-2 border-b border-slate-900 pb-3"><BookOpen className="w-4.5 h-4.5 text-indigo-400" /> Suggested Learning Roadmap</h3>
+      {/* Strengths and weaknesses list */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="p-6 rounded-2xl glass-panel flex flex-col gap-4">
+          <h3 className="font-extrabold text-slate-200 text-sm flex items-center gap-2 border-b border-slate-900 pb-3"><CheckCircle2 className="w-4.5 h-4.5 text-emerald-400 animate-pulse" /> Core Strengths</h3>
+          <ul className="list-disc list-inside text-slate-400 pl-2 text-xs leading-relaxed flex flex-col gap-2">
+            <li>Demonstrates a strong analytical architecture understanding of microservices.</li>
+            <li>Clear verbal communication speed; low hesitation threshold.</li>
+            <li>Good query index planning and normalization explanations.</li>
+          </ul>
+        </div>
+        <div className="p-6 rounded-2xl glass-panel flex flex-col gap-4">
+          <h3 className="font-extrabold text-slate-200 text-sm flex items-center gap-2 border-b border-slate-900 pb-3"><AlertTriangle className="w-4.5 h-4.5 text-amber-500" /> Focus Weaknesses</h3>
+          <ul className="list-disc list-inside text-slate-400 pl-2 text-xs leading-relaxed flex flex-col gap-2">
+            <li>Could improve in dynamic memory caching tradeoffs details.</li>
+            <li>System Design details lacked explicit load balancer sizing.</li>
+          </ul>
+        </div>
+      </div>
+
+      {/* Suggested Learning Roadmap */}
+      <div className="p-6 rounded-2xl glass-panel flex flex-col gap-6">
+        <h3 className="font-extrabold text-slate-200 text-sm flex items-center gap-2 border-b border-slate-900 pb-3"><BookOpen className="w-4.5 h-4.5 text-indigo-400" /> Custom Learning Roadmap</h3>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="p-5 rounded-xl border border-slate-900 bg-slate-900/20 glow-card flex flex-col justify-between min-h-[150px]">
+          <div className="p-5 rounded-xl border border-slate-900 bg-slate-950/30 hover:border-indigo-500/20 transition flex flex-col justify-between min-h-[140px]">
             <div>
               <span className="text-[9px] font-bold text-blue-400 tracking-wider uppercase">System Design</span>
               <h4 className="font-bold text-slate-200 text-sm mt-1 leading-snug">Study Redis Caching</h4>
-              <p className="text-[11px] text-slate-450 mt-2 leading-relaxed">Focus on LRU eviction, cluster sharding, and latency vs consistent hashing techniques.</p>
+              <p className="text-[10px] text-slate-500 mt-2 leading-relaxed">Focus on LRU eviction, cluster sharding, and latency vs consistent hashing techniques.</p>
             </div>
-            <a href="#" className="text-xs font-semibold text-blue-450 hover:text-blue-400 flex items-center mt-4 gap-1">Practice Guide <ChevronRight className="w-3.5 h-3.5" /></a>
+            <a href="#" className="text-[11px] font-semibold text-blue-400 hover:text-blue-300 flex items-center mt-4 gap-1">Practice Guide <ChevronRight className="w-3.5 h-3.5" /></a>
           </div>
 
-          <div className="p-5 rounded-xl border border-slate-900 bg-slate-900/20 glow-card flex flex-col justify-between min-h-[150px]">
+          <div className="p-5 rounded-xl border border-slate-900 bg-slate-950/30 hover:border-indigo-500/20 transition flex flex-col justify-between min-h-[140px]">
             <div>
               <span className="text-[9px] font-bold text-indigo-400 tracking-wider uppercase">Algorithms</span>
-              <h4 className="font-bold text-slate-200 text-sm mt-1 leading-snug">Solve 15 Graph DFS/BFS</h4>
-              <p className="text-[11px] text-slate-450 mt-2 leading-relaxed">Strengthen topological sorting, Dijkstra complexity, and recursive implementation patterns.</p>
+              <h4 className="font-bold text-slate-200 text-sm mt-1 leading-snug">Solve 1Graph DFS/BFS</h4>
+              <p className="text-[10px] text-slate-500 mt-2 leading-relaxed">Strengthen topological sorting, Dijkstra complexity, and recursive implementation patterns.</p>
             </div>
-            <a href="#" className="text-xs font-semibold text-indigo-450 hover:text-indigo-400 flex items-center mt-4 gap-1">Leetcode List <ChevronRight className="w-3.5 h-3.5" /></a>
+            <a href="#" className="text-[11px] font-semibold text-indigo-400 hover:text-indigo-300 flex items-center mt-4 gap-1">Leetcode List <ChevronRight className="w-3.5 h-3.5" /></a>
           </div>
 
-          <div className="p-5 rounded-xl border border-slate-900 bg-slate-900/20 glow-card flex flex-col justify-between min-h-[150px]">
+          <div className="p-5 rounded-xl border border-slate-900 bg-slate-950/30 hover:border-pink-500/20 transition flex flex-col justify-between min-h-[140px]">
             <div>
-              <span className="text-[9px] font-bold text-purple-400 tracking-wider uppercase">STAR Framework</span>
+              <span className="text-[9px] font-bold text-pink-400 tracking-wider uppercase">Behavioral</span>
               <h4 className="font-bold text-slate-200 text-sm mt-1 leading-snug">Behavioral STAR Framing</h4>
-              <p className="text-[11px] text-slate-450 mt-2 leading-relaxed">Practice formatting situational stories using concrete metric outcomes (e.g. "reduced latency by 40%").</p>
+              <p className="text-[10px] text-slate-500 mt-2 leading-relaxed">Practice formatting situational stories using concrete metric outcomes (e.g. "reduced latency by 40%").</p>
             </div>
-            <a href="#" className="text-xs font-semibold text-purple-450 hover:text-purple-400 flex items-center mt-4 gap-1">STAR Templates <ChevronRight className="w-3.5 h-3.5" /></a>
+            <a href="#" className="text-[11px] font-semibold text-pink-400 hover:text-pink-300 flex items-center mt-4 gap-1">STAR Templates <ChevronRight className="w-3.5 h-3.5" /></a>
           </div>
         </div>
       </div>
