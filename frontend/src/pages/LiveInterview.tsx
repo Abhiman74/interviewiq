@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Mic, MicOff, Video, VideoOff, Timer, Volume2, ShieldAlert, CheckCircle, RefreshCw } from 'lucide-react';
+import { Mic, MicOff, Video, VideoOff, Timer, Volume2, ShieldAlert, CheckCircle, RefreshCw, BarChart2, ShieldCheck, Activity } from 'lucide-react';
 import { ActiveSession, ParsedResume } from '../App';
 
 interface LiveInterviewProps {
@@ -68,10 +68,9 @@ export default function LiveInterview({ session, parsedResume, onFinish, onCance
   // Text to Speech for questions
   const speakQuestion = (text: string) => {
     if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel(); // Cancel any ongoing speech
+      window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
       
-      // Try to find a nice male/female English voice
       const voices = window.speechSynthesis.getVoices();
       const defaultVoice = voices.find(voice => voice.lang.startsWith('en') && voice.name.includes('Google'));
       if (defaultVoice) utterance.voice = defaultVoice;
@@ -142,7 +141,6 @@ export default function LiveInterview({ session, parsedResume, onFinish, onCance
   };
 
   const handleNextQuestion = () => {
-    // Save answer
     const currentQ = session.questions[currentIdx];
     const newAnswers = [
       ...answers,
@@ -163,9 +161,8 @@ export default function LiveInterview({ session, parsedResume, onFinish, onCance
       setCurrentIdx(nextIdx);
       speakQuestion(session.questions[nextIdx].content);
     } else {
-      // Finished all questions! Calculate mock score based on transcript content length and speed
       let totalTranscribedWords = newAnswers.reduce((acc, curr) => acc + curr.answerText.split(' ').length, 0);
-      let overallMockScore = Math.min(65 + Math.floor(totalTranscribedWords / 15), 94);
+      let overallMockScore = Math.min(68 + Math.floor(totalTranscribedWords / 12), 95);
       onFinish(overallMockScore, newAnswers);
     }
   };
@@ -176,78 +173,96 @@ export default function LiveInterview({ session, parsedResume, onFinish, onCance
     return `${m}:${s}`;
   };
 
+  // Mock Real-time Speech Metrics
+  const mockConfidence = inputText.length > 50 ? 'Strong' : (inputText.length > 10 ? 'Evaluating' : 'Waiting');
+  const mockPace = questionSeconds > 0 ? `${Math.round((inputText.split(' ').length / questionSeconds) * 60)} WPM` : '0 WPM';
+
   return (
     <div className="flex-1 bg-slate-950 flex flex-col">
       {/* Top Banner Status Info */}
-      <div className="border-b border-slate-900 bg-slate-950/60 px-6 py-3 flex items-center justify-between text-xs text-slate-400">
-        <div className="flex items-center gap-4">
+      <div className="border-b border-slate-900 bg-slate-950/40 px-6 py-3 flex items-center justify-between text-[11px] text-slate-400">
+        <div className="flex items-center gap-6">
           <span className="flex items-center gap-1.5"><Timer className="w-3.5 h-3.5 text-blue-400" /> Session: {formatTime(totalSeconds)}</span>
-          <span className="flex items-center gap-1.5"><RefreshCw className="w-3.5 h-3.5 text-indigo-400 animate-spin-slow" /> Active: {session.style}</span>
+          <span className="flex items-center gap-1.5"><RefreshCw className="w-3.5 h-3.5 text-indigo-400 animate-spin-slow" /> Active Format: {session.style}</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
-          <span className="text-emerald-400 font-semibold uppercase tracking-wider">Live Interviewing</span>
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+          <span className="text-emerald-400 font-bold uppercase tracking-widest text-[10px]">Live Session Active</span>
         </div>
       </div>
 
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 p-6 gap-6 max-w-7xl mx-auto w-full">
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 p-6 gap-6 max-w-7xl mx-auto w-full z-10">
         {/* Left Columns - Avatar & Video feeds */}
         <div className="lg:col-span-2 flex flex-col gap-6">
           {/* Avatar Panel */}
-          <div className="flex-1 rounded-2xl glass-morphism border border-slate-800 p-8 flex flex-col items-center justify-center text-center relative overflow-hidden min-h-[300px]">
-            <div className="absolute inset-0 bg-gradient-to-t from-blue-950/20 to-transparent pointer-events-none" />
+          <div className="flex-1 rounded-2xl glass-morphism border border-slate-900 p-8 flex flex-col items-center justify-center text-center relative overflow-hidden min-h-[350px]">
+            <div className="absolute inset-0 bg-gradient-to-t from-blue-950/10 to-transparent pointer-events-none" />
             
-            {/* Visual Speaking Indicator */}
+            {/* Visual Equalizer Speaking Indicator */}
             <div className="flex items-center gap-1.5 mb-6 h-12">
               {isSpeaking ? (
                 [1,2,3,4,5,6,5,4,3,2,1].map((h, i) => (
                   <span 
                     key={i} 
                     className="w-1 bg-gradient-to-t from-blue-500 to-indigo-400 rounded-full animate-bounce" 
-                    style={{ height: `${h * 7}px`, animationDelay: `${i * 0.08}s` }} 
+                    style={{ height: `${h * 8}px`, animationDelay: `${i * 0.08}s` }} 
                   />
                 ))
               ) : (
-                <span className="text-xs text-slate-500 font-mono tracking-wider">AI IS WAITING FOR YOUR RESPONSE</span>
+                <span className="text-[10px] text-slate-500 font-mono tracking-widest uppercase">AI is waiting for your response</span>
               )}
             </div>
 
-            <div className="w-28 h-28 rounded-full bg-gradient-to-tr from-blue-600 via-indigo-500 to-purple-600 flex items-center justify-center border-4 border-slate-900 shadow-2xl relative">
+            <div className="w-28 h-28 rounded-full bg-gradient-to-tr from-blue-600 via-indigo-500 to-purple-650 flex items-center justify-center border-4 border-slate-900 shadow-2xl relative">
               <Volume2 className={`w-10 h-10 text-white ${isSpeaking ? 'animate-pulse scale-110' : ''}`} />
               {isSpeaking && <span className="absolute inset-0 rounded-full border-4 border-blue-400/30 animate-ping" />}
             </div>
             
-            <h3 className="text-lg font-bold text-white mt-6">AI Interviewer</h3>
-            <p className="text-blue-400 text-xs font-semibold uppercase tracking-widest mt-1">Interpreting Response Metrics</p>
+            <h3 className="text-base font-bold text-white mt-6 tracking-wide">AI Interviewer Avatar</h3>
+            <p className="text-blue-400 text-[10px] font-black uppercase tracking-widest mt-1">Status: Active</p>
 
-            <div className="mt-8 bg-slate-900/80 border border-slate-800/80 rounded-2xl p-4 max-w-xl text-sm leading-relaxed text-slate-300">
+            <div className="mt-8 bg-slate-900/80 border border-slate-850 rounded-2xl p-5 max-w-xl text-sm leading-relaxed text-slate-200">
               "{session.questions[currentIdx]?.content}"
             </div>
           </div>
 
           {/* User Video Frame / Listening status banner */}
-          <div className="h-44 rounded-2xl border border-slate-900 bg-slate-950/60 p-4 flex gap-4 items-center justify-between">
+          <div className="h-44 rounded-2xl border border-slate-900 bg-slate-950/40 p-4 flex gap-4 items-center justify-between">
             {/* Camera feed */}
-            <div className="w-48 h-full bg-slate-900 border border-slate-800 rounded-xl overflow-hidden relative flex items-center justify-center">
+            <div className={`w-48 h-full bg-slate-900 border rounded-xl overflow-hidden relative flex items-center justify-center transition-all ${cameraOn ? 'border-emerald-500/30 shadow-lg shadow-emerald-500/5' : 'border-slate-800'}`}>
               {cameraOn ? (
                 <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover scale-x-[-1]" />
               ) : (
-                <VideoOff className="w-8 h-8 text-slate-600" />
+                <VideoOff className="w-8 h-8 text-slate-700" />
               )}
-              <span className="absolute bottom-2 left-2 text-[10px] font-bold tracking-wider px-2 py-0.5 rounded bg-slate-950/80 uppercase text-slate-400">CAM PREVIEW</span>
+              <span className={`absolute bottom-2 left-2 text-[8px] font-bold tracking-wider px-2 py-0.5 rounded-md uppercase ${cameraOn ? 'bg-emerald-500/90 text-white' : 'bg-slate-950/80 text-slate-400'}`}>
+                {cameraOn ? 'Rec Active' : 'Cam Preview'}
+              </span>
             </div>
 
             {/* Speaking feedback */}
             <div className="flex-1 flex flex-col justify-center gap-1.5 px-2">
-              <span className="text-xs font-semibold text-slate-400">Response Speed Monitoring</span>
-              <div className="flex items-center gap-2 mt-1">
-                <span className="text-2xl font-black text-white">{formatTime(questionSeconds)}</span>
-                <span className="text-xs text-slate-500">elapsed on current question</span>
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Metrics Monitoring</span>
+              <div className="flex items-center gap-4 mt-2">
+                <div className="flex flex-col">
+                  <span className="text-lg font-black text-white">{formatTime(questionSeconds)}</span>
+                  <span className="text-[10px] text-slate-500">time elapsed</span>
+                </div>
+                <div className="h-8 w-px bg-slate-900" />
+                <div className="flex flex-col">
+                  <span className="text-lg font-black text-white">{mockConfidence}</span>
+                  <span className="text-[10px] text-slate-500">voice confidence</span>
+                </div>
+                <div className="h-8 w-px bg-slate-900" />
+                <div className="flex flex-col">
+                  <span className="text-lg font-black text-white">{mockPace}</span>
+                  <span className="text-[10px] text-slate-500">speech rate</span>
+                </div>
               </div>
-              <div className="flex gap-4 items-center mt-3 text-xs">
+              <div className="flex gap-3 items-center mt-4 text-xs">
                 <button 
                   onClick={toggleCamera} 
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border font-semibold transition ${
+                  className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl border text-xs font-bold transition-all ${
                     cameraOn 
                       ? 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800' 
                       : 'bg-indigo-600/10 border-indigo-500/20 text-indigo-400 hover:bg-indigo-600/20'
@@ -257,9 +272,9 @@ export default function LiveInterview({ session, parsedResume, onFinish, onCance
                 </button>
                 <button 
                   onClick={() => speakQuestion(session.questions[currentIdx]?.content)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-800 bg-slate-900 text-slate-300 hover:bg-slate-800 font-semibold"
+                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-850 bg-slate-900 text-slate-300 hover:bg-slate-800 text-xs font-bold"
                 >
-                  <Volume2 className="w-3.5 h-3.5" /> Repeat Question
+                  <Volume2 className="w-3.5 h-3.5 text-slate-400" /> Repeat Question
                 </button>
               </div>
             </div>
@@ -268,28 +283,28 @@ export default function LiveInterview({ session, parsedResume, onFinish, onCance
 
         {/* Right Sidebar - Transcript & Actions */}
         <div className="flex flex-col gap-6">
-          <div className="flex-1 rounded-2xl glass-morphism border border-slate-800 p-6 flex flex-col gap-4">
+          <div className="flex-1 rounded-2xl glass-morphism border border-slate-900 p-6 flex flex-col gap-4">
             <div className="flex justify-between items-center border-b border-slate-900 pb-3">
-              <h3 className="font-bold text-white text-sm">Response Transcript</h3>
-              <span className="text-[10px] font-mono bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded font-bold uppercase">Web Speech API</span>
+              <h3 className="font-bold text-slate-200 text-xs tracking-wide">Transcript Editor</h3>
+              <span className="text-[9px] font-bold bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded-md uppercase tracking-wider">WebSpeech STT</span>
             </div>
 
             <textarea
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               placeholder="Your answer will transcribe automatically here. Feel free to edit or type directly if you prefer..."
-              className="flex-1 bg-slate-900 border border-slate-850 rounded-xl p-4 text-slate-300 placeholder-slate-600 outline-none focus:border-blue-500 transition text-sm resize-none leading-relaxed"
+              className="flex-1 bg-slate-950/60 border border-slate-900 rounded-xl p-4 text-slate-300 placeholder-slate-650 outline-none focus:border-blue-500/60 transition text-xs leading-relaxed resize-none font-sans"
             />
 
             <button
               onClick={toggleRecording}
-              className={`w-full py-4 rounded-xl font-bold flex items-center justify-center gap-3 transition-all ${
+              className={`w-full py-4 rounded-xl font-bold text-xs flex items-center justify-center gap-3 transition-all ${
                 isRecording 
-                  ? 'bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-900/20 animate-pulse' 
-                  : 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-900/20'
+                  ? 'bg-red-650 hover:bg-red-550 text-white shadow-lg shadow-red-900/10 animate-pulse' 
+                  : 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-900/15'
               }`}
             >
-              {isRecording ? <><MicOff className="w-5 h-5" /> Stop Transcribing</> : <><Mic className="w-5 h-5" /> Start Speaking</>}
+              {isRecording ? <><MicOff className="w-4 h-4" /> Stop Transcribing</> : <><Mic className="w-4 h-4" /> Start Speaking</>}
             </button>
           </div>
 
@@ -297,13 +312,13 @@ export default function LiveInterview({ session, parsedResume, onFinish, onCance
           <div className="flex gap-3">
             <button
               onClick={onCancel}
-              className="flex-1 py-3 bg-slate-900 hover:bg-slate-800 text-slate-400 font-bold text-sm rounded-xl border border-slate-850 transition"
+              className="flex-1 py-3.5 bg-slate-900 hover:bg-slate-850 text-slate-400 hover:text-slate-300 font-bold text-xs rounded-xl border border-slate-850 transition"
             >
               Abort Interview
             </button>
             <button
               onClick={handleNextQuestion}
-              className="flex-1 py-3 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white font-bold text-sm rounded-xl shadow-lg transition"
+              className="flex-1 py-3.5 bg-gradient-to-r from-blue-650 to-indigo-650 hover:from-blue-600 hover:to-indigo-600 text-white font-bold text-xs rounded-xl shadow-lg transition active:scale-95"
             >
               {currentIdx === session.questions.length - 1 ? 'Submit & Finish' : 'Next Question'}
             </button>
