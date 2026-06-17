@@ -35,3 +35,4 @@ export default function App() {
     </div>
   );
 }
+// Adjusted mobile menu state toggle layout and z-index
