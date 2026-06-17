@@ -29,3 +29,6 @@
 
 ### GET `/api/interview/:id/results`
 - **Response**: `{ "scores": { "overall": 82, ... }, "feedback": { "strengths": [...], "weaknesses": [...] } }`
+
+### Rate Limiting
+- Standard limits: 100 requests per 15 minutes.
