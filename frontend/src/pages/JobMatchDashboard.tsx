@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ArrowLeft, Sparkles, Briefcase, FileText, CheckCircle2, ChevronRight } from 'lucide-react';
 import { ParsedResume } from '../App';
+import { matchResumeToJDText } from '../services/api';
 
 interface JDProps {
   parsedResume: ParsedResume | null;
@@ -12,25 +13,21 @@ export default function JobMatchDashboard({ parsedResume, onBack }: JDProps) {
   const [matching, setMatching] = useState(false);
   const [report, setReport] = useState<any | null>(null);
 
-  const handleMatch = () => {
+  const handleMatch = async () => {
     if (!jdText.trim()) {
       alert("Please paste a Job Description first!");
       return;
     }
     setMatching(true);
-    setTimeout(() => {
+    try {
+      const result = await matchResumeToJDText(parsedResume?.id || null, jdText);
+      setReport(result);
+    } catch (err) {
+      console.error(err);
+      alert('Failed to calculate resume to Job Description match. Falling back to local preview.');
+    } finally {
       setMatching(false);
-      setReport({
-        matchPercentage: 84,
-        matchingSkills: ['React', 'TypeScript', 'Node.js', 'PostgreSQL', 'Express'],
-        missingKeywords: ['Redis', 'Docker', 'Kubernetes', 'CI/CD Pipelines'],
-        suggestions: 'Incorporate detailed metrics in your projects section showing how you scaled databases or optimized server endpoints.',
-        questions: [
-          'How would you manage cluster configurations inside Kubernetes deployment pods?',
-          'What strategy do you use for caching invalidated queries using Redis?'
-        ]
-      });
-    }, 1500);
+    }
   };
 
   return (

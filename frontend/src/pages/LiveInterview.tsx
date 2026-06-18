@@ -1,16 +1,22 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Mic, MicOff, Video, VideoOff, Timer, Volume2, ShieldAlert, CheckCircle, RefreshCw, BarChart2, ShieldCheck, ArrowRight, CornerDownLeft } from 'lucide-react';
 import { ActiveSession, ParsedResume } from '../App';
+import { submitInterviewAnswer } from '../services/api';
+
+import CodeSandbox from '../components/CodeSandbox';
 
 interface LiveInterviewProps {
   session: ActiveSession;
   parsedResume: ParsedResume | null;
-  onFinish: (score: number, answers: any[]) => void;
+  onFinish: (score: number, answers: any[], evaluationDetails?: any) => void;
   onCancel: () => void;
 }
 
 export default function LiveInterview({ session, parsedResume, onFinish, onCancel }: LiveInterviewProps) {
   const [currentIdx, setCurrentIdx] = useState(0);
+  const [currentQuestion, setCurrentQuestion] = useState(session.questions[0]?.content || '');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [sandboxCode, setSandboxCode] = useState('');
   const [answers, setAnswers] = useState<any[]>([]);
   const [inputText, setInputText] = useState('');
   const [isRecording, setIsRecording] = useState(false);
@@ -146,16 +152,29 @@ export default function LiveInterview({ session, parsedResume, onFinish, onCance
     }
   };
 
-  const handleNextQuestion = () => {
-    const currentQ = session.questions[currentIdx];
+  const handleNextQuestion = async () => {
+    if (isSubmitting) return;
+
+    const answerVal = inputText.trim() || '[No response text provided]';
+    const currentQText = currentQuestion;
+
+    // Calculate pacing metrics
+    const words = answerVal.split(/\s+/).filter(w => w.length > 0);
+    const wpm = questionSeconds > 3 ? Math.round((words.length / questionSeconds) * 60) : 110;
+    const fillerMatches = answerVal.match(/\b(um|uh|like|basically|actually|you\s+know)\b/gi);
+    const fillerCount = fillerMatches ? fillerMatches.length : 0;
+
     const newAnswers = [
       ...answers,
       {
-        questionId: currentQ.id,
-        question: currentQ.content,
-        category: currentQ.category,
-        answerText: inputText || '[No response text provided]',
-        timeSpentSeconds: questionSeconds
+        questionId: String(currentIdx + 1),
+        question: currentQText,
+        category: currentIdx === 0 ? 'Introductory' : 'Adaptive Follow-up',
+        answerText: answerVal,
+        timeSpentSeconds: questionSeconds,
+        wpm,
+        fillerCount,
+        codeSnippet: sandboxCode || undefined
       }
     ];
     setAnswers(newAnswers);
@@ -163,26 +182,50 @@ export default function LiveInterview({ session, parsedResume, onFinish, onCance
     // Update Chat History
     const updatedHistory = [
       ...chatHistory,
-      { sender: 'user', text: inputText || '[Text input provided]' }
+      { sender: 'user', text: answerVal }
     ];
     setChatHistory(updatedHistory);
     setInputText('');
     setQuestionSeconds(0);
+    setIsSubmitting(true);
+    setAiTyping(true);
 
-    const nextIdx = currentIdx + 1;
-    if (nextIdx < session.questions.length) {
-      setCurrentIdx(nextIdx);
-      setAiTyping(true);
-      setTimeout(() => {
-        setAiTyping(false);
-        const nextQ = session.questions[nextIdx].content;
+    // Append metadata for backend
+    const fullAnswerText = `${answerVal}${sandboxCode ? `\n\n[Candidate Code Sandbox Output]:\n${sandboxCode}` : ''}\n\n[Speech Performance Metrics]: WPM: ${wpm}, Fillers: ${fillerCount}`;
+
+    try {
+      const result = await submitInterviewAnswer(session.sessionId, fullAnswerText);
+      setAiTyping(false);
+
+      if (result.isFinished) {
+        onFinish(result.score || 80, newAnswers, result);
+      } else {
+        const nextQ = result.nextQuestion || '';
+        setCurrentQuestion(nextQ);
+        setCurrentIdx(prev => prev + 1);
         setChatHistory([...updatedHistory, { sender: 'ai', text: nextQ }]);
         speakQuestion(nextQ);
-      }, 1500);
-    } else {
-      let totalTranscribedWords = newAnswers.reduce((acc, curr) => acc + curr.answerText.split(' ').length, 0);
-      let overallMockScore = Math.min(68 + Math.floor(totalTranscribedWords / 12), 95);
-      onFinish(overallMockScore, newAnswers);
+      }
+    } catch (err) {
+      console.error('[LiveInterview] Submit error', err);
+      setAiTyping(false);
+      const nextIdx = currentIdx + 1;
+      if (nextIdx < 4) {
+        const fallbacks = [
+          'In your opinion, what are the primary architectural differences between designing a monolithic application versus microservices?',
+          'How would you design a rate-limiting middleware for a public API that receives 10,000 requests per minute?',
+          'Explain the concept of inheritance and polymorphism in OOP, and how you have used it in your projects.'
+        ];
+        const nextQ = fallbacks[nextIdx - 1] || 'Describe a difficult debugging challenge you resolved.';
+        setCurrentQuestion(nextQ);
+        setCurrentIdx(nextIdx);
+        setChatHistory([...updatedHistory, { sender: 'ai', text: nextQ }]);
+        speakQuestion(nextQ);
+      } else {
+        onFinish(82, newAnswers);
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -192,9 +235,16 @@ export default function LiveInterview({ session, parsedResume, onFinish, onCance
     return `${m}:${s}`;
   };
 
-  // Mock indicators
-  const currentCategory = session.questions[currentIdx]?.category || 'Technical';
-  const progressPct = ((currentIdx + 1) / session.questions.length) * 100;
+  // Dynamic indicators
+  const currentCategory = currentIdx === 0 ? 'Introductory' : 'Adaptive Follow-up';
+  const progressPct = Math.min(((currentIdx + 1) / 4) * 100, 100);
+
+  const isTechnicalRole = ['Software Engineer', 'Backend Engineer', 'Frontend Engineer', 'Full Stack Engineer', 'Machine Learning Engineer'].includes(session.role) || session.style.includes('Google') || session.style.includes('Microsoft') || session.style.includes('Startup');
+
+  const words = inputText.trim().split(/\s+/).filter(w => w.length > 0);
+  const liveWpm = questionSeconds > 3 ? Math.round((words.length / questionSeconds) * 60) : 0;
+  const fillerMatches = inputText.match(/\b(um|uh|like|basically|actually|you\s+know)\b/gi);
+  const liveFillers = fillerMatches ? fillerMatches.length : 0;
 
   return (
     <div className="flex-1 bg-[#0B0F19] flex flex-col h-screen overflow-hidden">
@@ -211,7 +261,7 @@ export default function LiveInterview({ session, parsedResume, onFinish, onCance
       </div>
 
       {/* Split Screen Layout */}
-      <div className="flex-1 flex flex-col md:flex-row overflow-hidden relative">
+      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
         {/* Left Side: AI Interviewer Chat Loop */}
         <div className="flex-1 flex flex-col border-r border-slate-900/60 bg-[#0B0F19]/20 overflow-y-auto p-6 relative">
           <div className="flex-1 flex flex-col gap-4 overflow-y-auto mb-20 scrollbar-thin">
@@ -293,8 +343,15 @@ export default function LiveInterview({ session, parsedResume, onFinish, onCance
           </div>
         </div>
 
+        {/* Center Side: Code Editor Sandbox */}
+        {isTechnicalRole && (
+          <div className="w-full lg:w-[48%] border-r border-slate-900 bg-[#0B0F19]/10 p-6 flex flex-col overflow-hidden shrink-0">
+            <CodeSandbox onChange={setSandboxCode} />
+          </div>
+        )}
+
         {/* Right Side: Details & Live Camera Feeds */}
-        <div className="w-full md:w-80 bg-[#111827]/40 backdrop-blur-lg flex flex-col p-6 gap-6 overflow-y-auto">
+        <div className="w-full lg:w-80 bg-[#111827]/40 backdrop-blur-lg flex flex-col p-6 gap-6 overflow-y-auto shrink-0">
           {/* Question metrics circular progress */}
           <div className="p-5 rounded-2xl bg-[#111827]/60 border border-slate-900 flex flex-col items-center text-center gap-3">
             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Active Progress</span>
@@ -320,7 +377,7 @@ export default function LiveInterview({ session, parsedResume, onFinish, onCance
                 </defs>
               </svg>
               <div className="absolute flex flex-col">
-                <span className="text-xl font-black text-white">{currentIdx + 1}/{session.questions.length}</span>
+                <span className="text-xl font-black text-white">{currentIdx + 1}/4</span>
                 <span className="text-[8px] text-slate-500 uppercase tracking-widest mt-0.5">Tasks</span>
               </div>
             </div>
@@ -331,13 +388,35 @@ export default function LiveInterview({ session, parsedResume, onFinish, onCance
             </div>
           </div>
 
+          {/* Live Pacing & Filler metrics */}
+          <div className="p-5 rounded-2xl bg-[#111827]/60 border border-slate-900 flex flex-col gap-3.5">
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Speech Pacing Metrics</span>
+            <div className="grid grid-cols-2 gap-3.5">
+              <div className="flex flex-col gap-1 text-left">
+                <span className="text-[9px] font-bold text-slate-500 uppercase">Pacing (WPM)</span>
+                <span className={`text-lg font-black ${liveWpm > 160 || (liveWpm < 90 && liveWpm > 0) ? 'text-amber-400' : 'text-emerald-400'}`}>{liveWpm}</span>
+                <span className="text-[8px] text-slate-500">{liveWpm > 160 ? 'Too Fast' : liveWpm < 90 && liveWpm > 0 ? 'Too Slow' : 'Normal'}</span>
+              </div>
+              <div className="flex flex-col gap-1 text-left">
+                <span className="text-[9px] font-bold text-slate-500 uppercase">Filler Words</span>
+                <span className={`text-lg font-black ${liveFillers > 3 ? 'text-rose-400' : 'text-slate-200'}`}>{liveFillers}</span>
+                <span className="text-[8px] text-slate-500">instances</span>
+              </div>
+            </div>
+          </div>
+
           {/* Web Cam feed */}
           <div className={`rounded-2xl border bg-[#111827]/60 p-4 flex flex-col gap-3 transition-all ${cameraOn ? 'border-emerald-500/30' : 'border-slate-900'}`}>
             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Camera Monitor</span>
             <div className="w-full h-32 bg-[#0B0F19] rounded-xl overflow-hidden relative flex items-center justify-center border border-slate-900/60">
-              {cameraOn ? (
-                <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover scale-x-[-1]" />
-              ) : (
+              <video 
+                ref={videoRef} 
+                autoPlay 
+                playsInline 
+                muted 
+                className={`w-full h-full object-cover scale-x-[-1] ${cameraOn ? 'block' : 'hidden'}`} 
+              />
+              {!cameraOn && (
                 <VideoOff className="w-8 h-8 text-slate-700" />
               )}
             </div>

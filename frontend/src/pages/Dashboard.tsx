@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { UploadCloud, Play, Sparkles, User, GraduationCap, Briefcase, Calendar, FileText, CheckCircle2, Award, ChevronRight, TrendingUp } from 'lucide-react';
 import { UserProfile, ParsedResume } from '../App';
+import { uploadResumeFile } from '../services/api';
 
 interface DashboardProps {
   profile: UserProfile;
@@ -13,34 +14,43 @@ interface DashboardProps {
 export default function Dashboard({ profile, parsedResume, setParsedResume, onStartInterview, history }: DashboardProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleResumeSimulatedUpload = () => {
+  const handleResumeUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
     setIsUploading(true);
-    setUploadProgress(15);
+    setUploadProgress(20);
     
     const interval = setInterval(() => {
-      setUploadProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setTimeout(() => {
-            setIsUploading(false);
-            setParsedResume({
-              fileName: 'Resume_Abhiman_Saharan.pdf',
-              atsScore: 84,
-              skills: ['React', 'TypeScript', 'Node.js', 'Express', 'PostgreSQL', 'REST APIs', 'System Design', 'Docker', 'Redis', 'Git'],
-              projects: [
-                { title: 'AgriCycle Platform', description: 'Architected a microservices-based agricultural trade pipeline utilizing Redis cluster caching.' },
-                { title: 'Portfolio CRM Hub', description: 'Designed real-time lead sync systems using WebSockets and PostgreSQL indexing.' }
-              ],
-              experience: ['Software Engineer Intern at stripe-like startup (3 months)', 'Open Source Contributor at Prisma ORM']
-            });
-          }, 350);
-          return 100;
-        }
-        return prev + 25;
-      });
-    }, 250);
+      setUploadProgress(prev => (prev < 90 ? prev + 10 : prev));
+    }, 150);
+
+    try {
+      const result = await uploadResumeFile(file);
+      clearInterval(interval);
+      setUploadProgress(100);
+      
+      setTimeout(() => {
+        setIsUploading(false);
+        setParsedResume({
+          id: result.resumeId,
+          fileName: result.parsedData.fileName || file.name,
+          atsScore: result.parsedData.atsScore || 80,
+          skills: result.parsedData.skills || [],
+          projects: result.parsedData.projects || [],
+          experience: result.parsedData.experience || []
+        });
+      }, 300);
+    } catch (err) {
+      clearInterval(interval);
+      setIsUploading(false);
+      console.error(err);
+      alert('Failed to parse resume. Initializing fallback client state.');
+    }
   };
+
 
   const getDifficultyColor = (diff: string) => {
     if (diff === 'Beginner') return 'text-blue-400 bg-blue-500/10 border-blue-500/20';
@@ -172,7 +182,7 @@ export default function Dashboard({ profile, parsedResume, setParsedResume, onSt
           {!parsedResume ? (
             <div className="flex flex-col gap-4">
               <div 
-                onClick={handleResumeSimulatedUpload}
+                onClick={() => fileInputRef.current?.click()}
                 className={`border border-dashed border-slate-800 hover:border-indigo-500/30 rounded-xl p-8 flex flex-col items-center justify-center text-center gap-4 hover:bg-indigo-500/5 transition cursor-pointer ${isUploading ? 'pointer-events-none' : ''}`}
               >
                 <UploadCloud className={`w-8 h-8 text-slate-500 ${isUploading ? 'animate-bounce' : ''}`} />
@@ -180,6 +190,13 @@ export default function Dashboard({ profile, parsedResume, setParsedResume, onSt
                   <span className="text-xs font-semibold text-slate-300">Click to upload resume</span>
                   <span className="text-[9px] text-slate-500">PDF, DOCX formats (Max 10MB)</span>
                 </div>
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  onChange={handleResumeUpload} 
+                  accept=".pdf" 
+                  className="hidden" 
+                />
               </div>
 
               {isUploading && (

@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, CheckCircle2, TrendingUp, AlertTriangle, BookOpen, ChevronRight, Award, HelpCircle } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, TrendingUp, AlertTriangle, BookOpen, ChevronRight, Award, HelpCircle, Sparkles } from 'lucide-react';
 
 interface ResultsProps {
   interviewId: string | null;
@@ -18,6 +18,25 @@ export default function InterviewResults({ interviewId, history, onBack }: Resul
     if (score >= 75) return 'B';
     return 'C+';
   };
+
+  const strengths = activeInterview.strengths || [
+    'Demonstrates a strong analytical architecture understanding of microservices.',
+    'Clear verbal communication speed; low hesitation threshold.',
+    'Good query index planning and normalization explanations.'
+  ];
+
+  const weaknesses = activeInterview.weaknesses || [
+    'Could improve in dynamic memory caching tradeoffs details.',
+    'System Design details lacked explicit load balancer sizing.'
+  ];
+
+  const feedback = activeInterview.feedback || 'Good overall performance, but focus on the specific caching patterns and data distribution metrics.';
+
+  const roadmapSteps = activeInterview.roadmapSteps || [
+    'Study Redis Caching LRU eviction policies & cluster sharding',
+    'Solve 15 Graph DFS/BFS topological sorting scenarios',
+    'Incorporate concrete metrics using the STAR behavioral framework'
+  ];
 
   const scoresBreakdown = [
     { name: 'Technical Depth', value: activeInterview.score + 2, color: 'bg-[#6366F1]' },
@@ -96,6 +115,16 @@ export default function InterviewResults({ interviewId, history, onBack }: Resul
         </div>
       </div>
 
+      {/* AI Interviewer Feedback */}
+      <div className="p-6 rounded-2xl glass-panel flex flex-col gap-3">
+        <h3 className="font-extrabold text-slate-200 text-sm flex items-center gap-2 border-b border-slate-900 pb-3">
+          <Sparkles className="w-4.5 h-4.5 text-indigo-400 animate-pulse" /> AI Feedback Summary
+        </h3>
+        <p className="text-slate-350 text-xs sm:text-sm leading-relaxed">
+          {feedback}
+        </p>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Scores Breakdown Column */}
         <div className="p-6 rounded-2xl glass-panel flex flex-col gap-6">
@@ -158,16 +187,17 @@ export default function InterviewResults({ interviewId, history, onBack }: Resul
         <div className="p-6 rounded-2xl glass-panel flex flex-col gap-4">
           <h3 className="font-extrabold text-slate-200 text-sm flex items-center gap-2 border-b border-slate-900 pb-3"><CheckCircle2 className="w-4.5 h-4.5 text-emerald-400 animate-pulse" /> Core Strengths</h3>
           <ul className="list-disc list-inside text-slate-400 pl-2 text-xs leading-relaxed flex flex-col gap-2">
-            <li>Demonstrates a strong analytical architecture understanding of microservices.</li>
-            <li>Clear verbal communication speed; low hesitation threshold.</li>
-            <li>Good query index planning and normalization explanations.</li>
+            {strengths.map((str: string, i: number) => (
+              <li key={i}>{str}</li>
+            ))}
           </ul>
         </div>
         <div className="p-6 rounded-2xl glass-panel flex flex-col gap-4">
           <h3 className="font-extrabold text-slate-200 text-sm flex items-center gap-2 border-b border-slate-900 pb-3"><AlertTriangle className="w-4.5 h-4.5 text-amber-500" /> Focus Weaknesses</h3>
           <ul className="list-disc list-inside text-slate-400 pl-2 text-xs leading-relaxed flex flex-col gap-2">
-            <li>Could improve in dynamic memory caching tradeoffs details.</li>
-            <li>System Design details lacked explicit load balancer sizing.</li>
+            {weaknesses.map((w: string, i: number) => (
+              <li key={i}>{w}</li>
+            ))}
           </ul>
         </div>
       </div>
@@ -177,32 +207,24 @@ export default function InterviewResults({ interviewId, history, onBack }: Resul
         <h3 className="font-extrabold text-slate-200 text-sm flex items-center gap-2 border-b border-slate-900 pb-3"><BookOpen className="w-4.5 h-4.5 text-indigo-400" /> Custom Learning Roadmap</h3>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="p-5 rounded-xl border border-slate-900 bg-slate-950/30 hover:border-indigo-500/20 transition flex flex-col justify-between min-h-[140px]">
-            <div>
-              <span className="text-[9px] font-bold text-blue-400 tracking-wider uppercase">System Design</span>
-              <h4 className="font-bold text-slate-200 text-sm mt-1 leading-snug">Study Redis Caching</h4>
-              <p className="text-[10px] text-slate-500 mt-2 leading-relaxed">Focus on LRU eviction, cluster sharding, and latency vs consistent hashing techniques.</p>
-            </div>
-            <a href="#" className="text-[11px] font-semibold text-blue-400 hover:text-blue-300 flex items-center mt-4 gap-1">Practice Guide <ChevronRight className="w-3.5 h-3.5" /></a>
-          </div>
-
-          <div className="p-5 rounded-xl border border-slate-900 bg-slate-950/30 hover:border-indigo-500/20 transition flex flex-col justify-between min-h-[140px]">
-            <div>
-              <span className="text-[9px] font-bold text-indigo-400 tracking-wider uppercase">Algorithms</span>
-              <h4 className="font-bold text-slate-200 text-sm mt-1 leading-snug">Solve 1Graph DFS/BFS</h4>
-              <p className="text-[10px] text-slate-500 mt-2 leading-relaxed">Strengthen topological sorting, Dijkstra complexity, and recursive implementation patterns.</p>
-            </div>
-            <a href="#" className="text-[11px] font-semibold text-indigo-400 hover:text-indigo-300 flex items-center mt-4 gap-1">Leetcode List <ChevronRight className="w-3.5 h-3.5" /></a>
-          </div>
-
-          <div className="p-5 rounded-xl border border-slate-900 bg-slate-950/30 hover:border-pink-500/20 transition flex flex-col justify-between min-h-[140px]">
-            <div>
-              <span className="text-[9px] font-bold text-pink-400 tracking-wider uppercase">Behavioral</span>
-              <h4 className="font-bold text-slate-200 text-sm mt-1 leading-snug">Behavioral STAR Framing</h4>
-              <p className="text-[10px] text-slate-500 mt-2 leading-relaxed">Practice formatting situational stories using concrete metric outcomes (e.g. "reduced latency by 40%").</p>
-            </div>
-            <a href="#" className="text-[11px] font-semibold text-pink-400 hover:text-pink-300 flex items-center mt-4 gap-1">STAR Templates <ChevronRight className="w-3.5 h-3.5" /></a>
-          </div>
+          {roadmapSteps.map((step: string, idx: number) => {
+            const colors = [
+              { label: 'Technical', text: 'text-blue-400', border: 'hover:border-blue-500/20', link: 'Practice Guide' },
+              { label: 'Algorithms', text: 'text-indigo-400', border: 'hover:border-indigo-500/20', link: 'Leetcode List' },
+              { label: 'Behavioral', text: 'text-pink-400', border: 'hover:border-pink-500/20', link: 'STAR Templates' }
+            ];
+            const col = colors[idx % 3];
+            return (
+              <div key={idx} className={`p-5 rounded-xl border border-slate-900 bg-slate-950/30 ${col.border} transition flex flex-col justify-between min-h-[140px]`}>
+                <div>
+                  <span className={`text-[9px] font-bold ${col.text} tracking-wider uppercase`}>{col.label} Focus</span>
+                  <h4 className="font-bold text-slate-200 text-sm mt-1 leading-snug">{step}</h4>
+                  <p className="text-[10px] text-slate-500 mt-2 leading-relaxed">Personalized step to improve your interview performance based on evaluation feedback.</p>
+                </div>
+                <a href="#" className={`text-[11px] font-semibold ${col.text} hover:opacity-80 flex items-center mt-4 gap-1`}>{col.link} <ChevronRight className="w-3.5 h-3.5" /></a>
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>

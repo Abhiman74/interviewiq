@@ -12,6 +12,8 @@ import {
   Menu, ChevronLeft, ChevronRight, LogOut, Bell, Search, Moon, Sun, Award
 } from 'lucide-react';
 
+import { startNewInterview } from './services/api';
+
 export interface UserProfile {
   name: string;
   college: string;
@@ -22,6 +24,7 @@ export interface UserProfile {
 }
 
 export interface ParsedResume {
+  id?: string;
   fileName: string;
   atsScore: number;
   skills: string[];
@@ -30,6 +33,7 @@ export interface ParsedResume {
 }
 
 export interface ActiveSession {
+  sessionId: string;
   role: string;
   difficulty: string;
   style: string;
@@ -57,23 +61,38 @@ export default function App() {
     { id: '2', role: 'Backend Engineer', style: 'Amazon-style', date: '2026-06-14', score: 82, difficulty: 'Advanced' }
   ]);
 
-  const handleStartInterview = (config: { role: string; difficulty: string; style: string }) => {
-    const resumeSkills = parsedResume ? parsedResume.skills : ['React', 'TypeScript', 'Node.js', 'PostgreSQL'];
-    const mockQuestions = [
-      { id: '1', content: `Tell me about yourself and your experience working with ${resumeSkills.slice(0, 3).join(', ')}.`, category: 'Behavioral' },
-      { id: '2', content: `In your opinion, what are the primary architectural differences between designing a monolithic application versus microservices?`, category: 'System Design' },
-      { id: '3', content: `How would you design a rate-limiting middleware for a public API that receives 10,000 requests per minute?`, category: 'Scenario' },
-      { id: '4', content: `Explain the concept of inheritance and polymorphism in OOP, and how you have used it in your projects.`, category: 'OOP' }
-    ];
-
-    setActiveSession({
-      ...config,
-      questions: mockQuestions
-    });
-    setCurrentPage('live-interview');
+  const handleStartInterview = async (config: { role: string; difficulty: string; style: string; companyContext?: string }) => {
+    try {
+      const result = await startNewInterview(
+        config.role,
+        config.difficulty,
+        config.style,
+        parsedResume?.id,
+        config.companyContext
+      );
+      setActiveSession({
+        sessionId: result.sessionId,
+        role: config.role,
+        difficulty: config.difficulty,
+        style: config.style,
+        questions: [{ id: '1', content: result.nextQuestion, category: 'Intro' }]
+      });
+      setCurrentPage('live-interview');
+    } catch (err) {
+      console.error('[App] Failed to start interview on backend. Initializing client fallback.', err);
+      // Fallback
+      setActiveSession({
+        sessionId: 'mock_session_' + Math.random().toString(36).substring(2, 9),
+        role: config.role,
+        difficulty: config.difficulty,
+        style: config.style,
+        questions: [{ id: '1', content: 'Introduce yourself and your experience.', category: 'Intro' }]
+      });
+      setCurrentPage('live-interview');
+    }
   };
 
-  const handleFinishInterview = (score: number, questionsWithAnswers: any[]) => {
+  const handleFinishInterview = (score: number, questionsWithAnswers: any[], evaluationDetails?: any) => {
     const newId = (history.length + 1).toString();
     const newHistoryItem = {
       id: newId,
@@ -81,7 +100,11 @@ export default function App() {
       style: activeSession?.style || 'Standard',
       date: new Date().toISOString().split('T')[0],
       score: score,
-      difficulty: activeSession?.difficulty || 'Intermediate'
+      difficulty: activeSession?.difficulty || 'Intermediate',
+      feedback: evaluationDetails?.feedback,
+      strengths: evaluationDetails?.strengths,
+      weaknesses: evaluationDetails?.weaknesses,
+      roadmapSteps: evaluationDetails?.roadmapSteps
     };
     setHistory([newHistoryItem, ...history]);
     setCompletedInterviewId(newId);

@@ -3,13 +3,14 @@ import { ArrowLeft, Play, Sparkles, Building2, Sliders, ShieldCheck } from 'luci
 
 interface SetupProps {
   onBack: () => void;
-  onStart: (config: { role: string; difficulty: string; style: string }) => void;
+  onStart: (config: { role: string; difficulty: string; style: string; companyContext?: string }) => void;
 }
 
 export default function InterviewSetup({ onBack, onStart }: SetupProps) {
   const [role, setRole] = useState('Software Engineer');
   const [difficulty, setDifficulty] = useState('Intermediate');
   const [style, setStyle] = useState('Google-style');
+  const [customContext, setCustomContext] = useState('');
 
   const roles = [
     'Software Engineer', 'Backend Engineer', 'Frontend Engineer', 
@@ -97,6 +98,19 @@ export default function InterviewSetup({ onBack, onStart }: SetupProps) {
                 <span className="text-xs text-slate-400 leading-relaxed mt-1">{s.desc}</span>
               </div>
             ))}
+
+            {/* Custom Context */}
+            <div className="flex flex-col gap-2 mt-4 text-left">
+              <label className="text-sm font-semibold text-slate-350 flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-pink-400" /> Target Company Context (Optional)
+              </label>
+              <textarea
+                value={customContext}
+                onChange={(e) => setCustomContext(e.target.value)}
+                placeholder="Paste specific engineering values, cultural guidelines, or coding styles of your target company to adapt the AI..."
+                className="bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-slate-200 outline-none focus:border-blue-500 transition resize-none h-24 text-xs leading-relaxed"
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -107,7 +121,7 @@ export default function InterviewSetup({ onBack, onStart }: SetupProps) {
           <span>Real-time speech analysis and camera parameters will initialize upon launching the interview. Ensure mic and speaker settings are ready.</span>
         </div>
         <button
-          onClick={() => onStart({ role, difficulty, style })}
+          onClick={() => onStart({ role, difficulty, style, companyContext: customContext })}
           className="flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 rounded-xl font-bold text-white shadow-xl shadow-blue-900/30 transition-all active:scale-95"
         >
           Start Simulation <Play className="w-4 h-4 fill-white" />

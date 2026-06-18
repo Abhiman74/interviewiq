@@ -1,6 +1,11 @@
 import { Router } from 'express';
-import { uploadResume } from '../controllers/resumeController';
+import multer from 'multer';
+import { uploadResume, matchJobDescription } from '../controllers/resumeController';
+
 const router = Router();
-router.post('/upload', uploadResume);
-export default router;// Added route GET /api/resume/:id/skills
-// Add Multer size filters: max 10MB limit
+const upload = multer({ limits: { fileSize: 10 * 1024 * 1024 } }); // 10MB limit
+
+router.post('/upload', upload.single('file'), uploadResume);
+router.post('/match-jd', matchJobDescription);
+
+export default router;
